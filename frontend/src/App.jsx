@@ -20,10 +20,15 @@ import { rescore, poolStats } from './lib/rescore'
 import { useTheme } from './lib/ui'
 import Board from './components/Board'
 import Detail from './components/Detail'
-import { FusionInspector, TaxonomyExplorer, JobAudit, FeedbackView } from './components/Views'
+import ChatDock from './components/Chat'
+import Intake from './components/Intake'
+import Report from './components/Report'
+import { DiffPanel, SignalsView, FusionInspector, TaxonomyExplorer, JobAudit, FeedbackView }
+  from './components/Views'
 
 const TABS = [
   ['board', 'Shortlist'],
+  ['signals', 'Signals'],
   ['fusion', 'Fusion inspector'],
   ['taxonomy', 'Skill ontology'],
   ['audit', 'JD audit'],
@@ -52,9 +57,21 @@ export default function App() {
 
   const [tab, setTab] = useState('board')
   const [selected, setSelected] = useState(null)
+  // At most two, most-recently-picked wins — a diff of three is a table, not a diff.
+  const [compare, setCompare] = useState([])
+
+  // The staged batch, before anything is sent. Kept here rather than inside
+  // Intake so "New batch" can drop the recruiter back into a populated screen.
+  const [jdFile, setJdFile] = useState(null)
+  const [resumeFiles, setResumeFiles] = useState([])
+
+  // null when nothing is printing. Set, then window.print() once React has
+  // painted the report — printing before the paint gives a blank page.
+  const [printMode, setPrintMode] = useState(null)
 
   const [theme, toggleTheme] = useTheme()
-  const fileRef = useRef(null)
+  const jdSwapRef = useRef(null)
+  const addRef = useRef(null)
 
   /* Ranking recomputed in the browser from sub-scores already in the payload. */
   const candidates = useMemo(() => {
@@ -84,6 +101,7 @@ export default function App() {
       setGate(data.meta.gate)
       setBlind(data.meta.blind)
       setSelected(null)
+      setCompare([])
     } catch (e) {
       setError(e.message)
     } finally {
@@ -94,21 +112,84 @@ export default function App() {
   const loadSample = () => run(() => fetch(
     `/api/analyze/sample?enrichment=${enrichment}&blind_mode=${blind}`, { method: 'POST' }))
 
-  const upload = (files) => {
-    const list = [...files]
-    const jd = list.find((f) => /jd|job|description/i.test(f.name)) ?? list[0]
-    const resumes = list.filter((f) => f !== jd)
-    if (!resumes.length) {
-      setError('Select a job description plus at least one resume.')
+  /* Analyse the batch staged on the intake screen. The JD is chosen explicitly
+     there, so nothing here has to guess which file it was from its name. */
+  const analyseStaged = () => {
+    if (!jdFile || !resumeFiles.length) {
+      setError('Choose a job description and at least one resume.')
       return
     }
     const form = new FormData()
-    form.append('jd', jd)
-    for (const r of resumes) form.append('resumes', r)
+    form.append('jd', jdFile)
+    for (const r of resumeFiles) form.append('resumes', r)
     form.append('enrichment', String(enrichment))
     form.append('blind_mode', String(blind))
     run(() => fetch('/api/analyze', { method: 'POST', body: form }))
   }
+
+  /* ── Live pool edits ──────────────────────────────────────────────────
+     These three re-score on the server, but the resumes are already parsed and
+     already embedded, so each is a fraction of a second rather than a re-ingest.
+     Scores DO move for everyone: the normalisation anchors are pool-relative,
+     so changing who is in the room genuinely changes where people stand. */
+
+  const swapJd = (file) => {
+    if (!file) return
+    const form = new FormData()
+    form.append('jd', file)
+    form.append('alpha', String(alpha))
+    form.append('gate', String(gate))
+    form.append('blind_mode', String(blind))
+    run(() => fetch('/api/jd', { method: 'POST', body: form }))
+  }
+
+  const addCandidates = (files) => {
+    const list = [...files].filter((f) => /\.pdf$/i.test(f.name))
+    if (!list.length) return
+    const form = new FormData()
+    for (const f of list) form.append('resumes', f)
+    form.append('alpha', String(alpha))
+    form.append('gate', String(gate))
+    form.append('blind_mode', String(blind))
+    run(() => fetch('/api/candidates', { method: 'POST', body: form }))
+  }
+
+  const removeCandidate = useCallback((docId) => {
+    setSelected((cur) => (cur?.doc_id === docId ? null : cur))
+    setCompare((prev) => prev.filter((d) => d !== docId))
+    run(() => fetch(
+      `/api/candidates/${encodeURIComponent(docId)}?alpha=${alpha}&gate=${gate}&blind_mode=${blind}`,
+      { method: 'DELETE' }))
+  }, [run, alpha, gate, blind])
+
+  /* Print: mount the report (outside .app so the print stylesheet can hide the
+     UI without also hiding the report), wait for paint, then open the dialog.
+     Clear only after print finishes — clearing on a zero timeout unmounted the
+     report before the browser captured it. */
+  const print = useCallback((mode) => {
+    setPrintMode(mode)
+  }, [])
+
+  useEffect(() => {
+    if (!printMode) return undefined
+    let cancelled = false
+    const clear = () => { if (!cancelled) setPrintMode(null) }
+    window.addEventListener('afterprint', clear)
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) window.print()
+      })
+    })
+    // Browsers that never fire afterprint (rare); keep the report mounted while
+    // the dialog is open — a short timeout blanked the page mid-print.
+    const fallback = setTimeout(clear, 60_000)
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
+      window.removeEventListener('afterprint', clear)
+      clearTimeout(fallback)
+    }
+  }, [printMode])
 
   /* Blind mode is a server-side re-render: pseudonyms come from pool position,
      and the resume text has to be masked for display. Scores are untouched. */
@@ -121,58 +202,44 @@ export default function App() {
       .catch(() => {})
   }, [payload, alpha, gate])
 
+  const toggleCompare = useCallback((docId) => {
+    setCompare((prev) => (prev.includes(docId)
+      ? prev.filter((d) => d !== docId)
+      : [...prev, docId].slice(-2)))
+  }, [])
+
+  const comparePair = compare
+    .map((id) => candidates.find((c) => c.doc_id === id))
+    .filter(Boolean)
+
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') setSelected(null) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  /* ── Empty state ─────────────────────────────────────────────────────── */
+  /* ── Intake ──────────────────────────────────────────────────────────── */
   if (!payload && !loading) {
     return (
       <div className="app">
-        <div className="empty">
-          <div className="empty__inner">
-            <h1>Rank a batch of resumes against one job description.</h1>
-            <p>
-              Two independent channels — BM25 with per-skill lexical coverage, and
-              sentence embeddings with per-skill semantic inference — fused into one
-              ranking. Every score traces back to a line of text, weighted by where
-              on the resume that line appears and whether any public code backs it up.
-              No language model scores anything.
-            </p>
-
-            {error && (
-              <div className="banner banner--error" style={{ marginTop: 16, textAlign: 'left' }}>
-                {error}
-              </div>
-            )}
-
-            <div className="empty__actions">
-              <button className="btn btn--primary" onClick={loadSample}>
-                Analyse the sample corpus
-              </button>
-              <button className="btn" onClick={() => fileRef.current?.click()}>
-                Upload JD + resumes
-              </button>
-              <input ref={fileRef} type="file" accept="application/pdf" multiple hidden
-                     onChange={(e) => e.target.files?.length && upload(e.target.files)} />
-            </div>
-
-            <div className="empty__actions" style={{ marginTop: 14 }}>
-              <Toggle checked={enrichment} onChange={setEnrichment}
-                      label="Use external evidence (GitHub)"
-                      title="Fetch public repositories to verify claims. Cached to disk; falls back silently when offline." />
-              <Toggle checked={blind} onChange={setBlind}
-                      label="Blind screening"
-                      title="Hide identity. Scoring is already blind — this controls what you can see." />
-            </div>
-
-            <p className="note" style={{ marginTop: 18 }}>
-              Name the job description file with “jd” or “job” so it is picked out of the batch.
-            </p>
-          </div>
-        </div>
+        <header className="topbar topbar--bare">
+          <div className="brand"><span className="brand__mark">SH</span> SmartHire</div>
+          <div className="topbar__spacer" />
+          <button className="btn btn--ghost btn--icon" onClick={toggleTheme}
+                  aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                  title="Toggle theme">
+            {theme === 'dark' ? '☀' : '☾'}
+          </button>
+        </header>
+        <Intake
+          jd={jdFile} setJd={setJdFile}
+          resumes={resumeFiles} setResumes={setResumeFiles}
+          onAnalyse={analyseStaged} onSample={loadSample}
+          error={error}
+          enrichment={enrichment} setEnrichment={setEnrichment}
+          blind={blind} setBlind={setBlind}
+          Toggle={Toggle}
+        />
       </div>
     )
   }
@@ -182,13 +249,14 @@ export default function App() {
   const pool = meta?.pool_integrity
 
   return (
+    <>
     <div className="app">
       <header className="topbar">
-        <div className="brand"><span className="brand__mark">IL</span> InterLoom</div>
+        <div className="brand"><span className="brand__mark">SH</span> SmartHire</div>
 
         {job && (
           <div className="topbar__role">
-            <strong>{job.title}</strong>
+            <strong title={job.title}>{job.title}</strong>
             <span>{meta.pool_size} candidates</span>
           </div>
         )}
@@ -214,9 +282,15 @@ export default function App() {
             {theme === 'dark' ? '☀' : '☾'}
           </button>
 
-          <button className="btn" onClick={() => fileRef.current?.click()}>New batch</button>
-          <input ref={fileRef} type="file" accept="application/pdf" multiple hidden
-                 onChange={(e) => e.target.files?.length && upload(e.target.files)} />
+          <button className="btn" onClick={() => print('summary')}
+                  title="One-page shortlist report — print, or save as PDF">
+            Print summary
+          </button>
+
+          <button className="btn" onClick={() => { setPayload(null); setError(null) }}
+                  title="Return to the intake screen with this batch still staged">
+            New batch
+          </button>
         </div>
       </header>
 
@@ -226,6 +300,11 @@ export default function App() {
                   onClick={() => setTab(id)}>
             {label}
             {id === 'board' && <span className="tab__count">{candidates.length}</span>}
+            {id === 'signals' && (
+              <span className="tab__count">
+                {candidates.filter((c) => c.flag !== 'CONSENSUS').length}
+              </span>
+            )}
             {id === 'audit' && job?.bias && <span className="tab__count">{job.bias.findings.length}</span>}
           </button>
         ))}
@@ -233,6 +312,32 @@ export default function App() {
 
       <div className={`workspace ${liveSelected ? 'workspace--detail' : ''}`}>
         <aside className="col rail">
+          {/* Editing the batch is a live operation: the resumes stay parsed and
+              embedded, so swapping the JD or adding someone re-scores in well
+              under a second rather than re-ingesting the pool. */}
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>This batch</div>
+            <div className="railbtns">
+              <button className="btn railbtn" onClick={() => jdSwapRef.current?.click()}
+                      title="Score this same pool against a different job description">
+                Change JD
+              </button>
+              <input ref={jdSwapRef} type="file" accept="application/pdf" hidden
+                     onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; swapJd(f) }} />
+
+              <button className="btn railbtn" onClick={() => addRef.current?.click()}
+                      title="Add more resumes to the live pool">
+                Add candidates
+              </button>
+              <input ref={addRef} type="file" accept="application/pdf" multiple hidden
+                     onChange={(e) => { const f = e.target.files; e.target.value = ''; addCandidates(f) }} />
+            </div>
+            <p className="note" style={{ marginTop: 6 }}>
+              Everyone is re-scored: the normalisation is pool-relative, so who is
+              in the room changes where people stand.
+            </p>
+          </div>
+
           <div>
             <div className="eyebrow" style={{ marginBottom: 6 }}>Matching weight</div>
             <div className="slider">
@@ -294,8 +399,19 @@ export default function App() {
           {error && <div className="banner banner--error" style={{ marginBottom: 12 }}>{error}</div>}
 
           {tab === 'board' && (
-            <Board candidates={candidates} selected={liveSelected}
-                   onSelect={setSelected} loading={loading} />
+            <>
+              {comparePair.length === 2 && (
+                <DiffPanel a={comparePair[0]} b={comparePair[1]}
+                           onClose={() => setCompare([])} />
+              )}
+              <Board candidates={candidates} selected={liveSelected}
+                     onSelect={setSelected} loading={loading}
+                     compare={compare} onCompare={toggleCompare}
+                     onRemove={removeCandidate} />
+            </>
+          )}
+          {tab === 'signals' && (
+            <SignalsView candidates={candidates} selected={liveSelected} onSelect={setSelected} />
           )}
           {tab === 'fusion' && <FusionInspector candidates={candidates} meta={meta} />}
           {tab === 'taxonomy' && <TaxonomyExplorer job={job} candidates={candidates} />}
@@ -305,10 +421,26 @@ export default function App() {
           )}
         </main>
 
+        {/* The inspector is one candidate; the dock underneath is the whole pool.
+            Both are answers about the same ranking, so they share a column —
+            and the dock stays reachable whether or not a row is open. */}
         <aside className="col inspector">
-          <Detail candidate={liveSelected} onClose={() => setSelected(null)} />
+          <div className="inspector__body">
+            <Detail candidate={liveSelected} alpha={alpha}
+                    onClose={() => setSelected(null)}
+                    onPrint={() => print('candidate')}
+                    onRemove={removeCandidate} />
+          </div>
+          {candidates.length > 0 && (
+            <ChatDock candidates={candidates} alpha={alpha} gate={gate}
+                      onSelect={setSelected} />
+          )}
         </aside>
       </div>
+
     </div>
+    <Report mode={printMode} candidate={liveSelected} candidates={candidates}
+            meta={meta} job={job} />
+    </>
   )
 }

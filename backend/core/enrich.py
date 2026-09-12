@@ -280,7 +280,7 @@ def _session():
     s = requests.Session()
     s.headers.update({
         "Accept": "application/vnd.github+json",
-        "User-Agent": "InterLoom-Shortlisting-Engine",
+        "User-Agent": "SmartHire-Shortlisting-Engine",
         "X-GitHub-Api-Version": "2022-11-28",
     })
     if config.GITHUB_TOKEN:

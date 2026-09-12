@@ -53,7 +53,7 @@ def record(name: str, ok: bool | str, detail: str = "") -> None:
 
 
 def main() -> int:
-    print("InterLoom acceptance suite\n")
+    print("SmartHire acceptance suite\n")
 
     real_jd = sorted((ROOT / "data" / "jd").glob(PDF_GLOB))
     real_res = sorted((ROOT / "data" / "resumes").glob(PDF_GLOB))

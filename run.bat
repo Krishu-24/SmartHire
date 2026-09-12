@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 REM ============================================================
-REM  InterLoom launcher
+REM  SmartHire launcher
 REM  - Verifies Python and Node are installed
 REM  - Creates .venv if missing; installs deps only when they change
 REM  - Caches the embedding model before the demo, not during it
@@ -24,7 +24,7 @@ set "API_PORT=8000"
 set "UI_PORT=5173"
 
 echo ================================================
-echo   InterLoom - Smart Shortlisting Engine
+echo   SmartHire - Smart Shortlisting Engine
 echo ================================================
 echo.
 
@@ -122,7 +122,7 @@ echo.
 
 REM ---- 5. Frontend dependencies, only when they changed ---------------
 set "UI_DIR=%~dp0frontend"
-set "UI_LOCK=%UI_DIR%\node_modules\.interloom-package.lock"
+set "UI_LOCK=%UI_DIR%\node_modules\.smarthire-package.lock"
 set "NEED_NPM=1"
 
 if exist "%UI_DIR%\node_modules" (
@@ -165,9 +165,9 @@ if exist "%MODEL_STAMP%" (
     if errorlevel 1 (
         echo.
         echo [WARN] The model could not be cached or failed its sanity check.
-        echo        InterLoom will still run using the offline TF-IDF fallback,
+        echo        SmartHire will still run using the offline TF-IDF fallback,
         echo        with reduced semantic quality. To force it:
-        echo            set INTERLOOM_SEMANTIC=tfidf_svd
+        echo            set SMARTHIRE_SEMANTIC=tfidf_svd
         echo.
     ) else (
         echo model cached> "%MODEL_STAMP%"
@@ -219,15 +219,15 @@ echo.
 
 REM ---- 10. Start both servers -----------------------------------------
 echo ================================================
-echo   Starting InterLoom
+echo   Starting SmartHire
 echo     API : http://localhost:%API_PORT%
 echo     UI  : http://localhost:%UI_PORT%
 echo   Close the two server windows to stop.
 echo ================================================
 echo.
 
-start "InterLoom API" cmd /k ""%VENV_PY%" -m uvicorn backend.app:app --port %API_PORT%"
-start "InterLoom UI" cmd /k "cd /d "%UI_DIR%" && npm run dev"
+start "SmartHire API" cmd /k ""%VENV_PY%" -m uvicorn backend.app:app --port %API_PORT%"
+start "SmartHire UI" cmd /k "cd /d "%UI_DIR%" && npm run dev"
 
 echo [..] Waiting for the API to answer ...
 set "READY="
@@ -241,7 +241,7 @@ for /l %%i in (1,1,40) do (
 if defined READY (
     echo [OK] API is up.
 ) else (
-    echo [WARN] The API did not answer in time. Check the "InterLoom API" window.
+    echo [WARN] The API did not answer in time. Check the "SmartHire API" window.
 )
 
 REM Vite binds IPv6 loopback, so open localhost rather than 127.0.0.1 - the
@@ -254,7 +254,7 @@ ping -n 4 127.0.0.1 >nul 2>nul
 start "" "http://localhost:%UI_PORT%"
 
 echo.
-echo InterLoom is running. This window can be closed.
+echo SmartHire is running. This window can be closed.
 echo.
 pause
 endlocal
@@ -269,7 +269,7 @@ if errorlevel 1 (
     exit /b 0
 )
 echo [ERROR] Something is already listening on port %1 ^(%~2^).
-echo         Close that program or the earlier InterLoom window, then re-run.
+echo         Close that program or the earlier SmartHire window, then re-run.
 echo.
 pause
 exit /b 1

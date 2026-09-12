@@ -1,5 +1,5 @@
 /* ==========================================================================
-   InterLoom · Layout and components
+   SmartHire · Layout and components
 
    Three columns: controls, the board, the inspector. The board is the product;
    the other two are there to explain it. Nothing floats, nothing glows, and
@@ -144,7 +144,11 @@
 .inspector {
     border-left: 1px solid var(--line);
     background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
+.inspector__body { flex: 1; min-height: 0; overflow-y: auto; }
 
 /* ---- Panels ------------------------------------------------------------- */
 
@@ -274,8 +278,11 @@
 .evbar__seg--missing  { background: var(--missing-line); }
 
 .evbar__legend {
-    display: flex; gap: var(--s3); margin-top: 5px;
+    display: flex; flex-wrap: wrap;
+    column-gap: var(--s3); row-gap: 1px;
+    margin-top: 5px;
     font-family: var(--mono); font-size: 9.5px; color: var(--ink-4);
+    min-width: 0;
 }
 
 /* ---- Chips -------------------------------------------------------------- */
@@ -512,6 +519,167 @@
 .kv__k { color: var(--ink-3); }
 .kv__v { font-family: var(--mono); color: var(--ink); }
 
+/* ---- Charts -------------------------------------------------------------
+   Two rules only: geometry comes from the SVG, colour comes from tokens. */
+
+.chart { width: 100%; max-width: 460px; height: auto; display: block; }
+.chart--radar { max-width: 300px; margin: 0 auto; }
+.chart__grid  { stroke: var(--line); stroke-width: 1; }
+.chart__axis  { stroke: var(--line); stroke-width: 1; }
+.chart__label { fill: var(--ink-4); font-size: 9.5px; font-family: var(--mono); }
+.chart__pt    { cursor: pointer; transition: r var(--fast) var(--ease); }
+.chart__pt:hover { fill-opacity: 1; }
+
+.legend {
+    display: flex; flex-wrap: wrap; gap: var(--s3);
+    margin-top: var(--s2);
+    font-size: 11px; color: var(--ink-3);
+}
+.legend__item { display: flex; align-items: center; gap: 5px; }
+.legend__item i { width: 7px; height: 7px; border-radius: 99px; display: block; }
+
+.contrib { display: flex; height: 15px; border-radius: var(--r-sm); overflow: hidden; }
+.contrib i {
+    display: grid; place-items: center;
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: .04em;
+    font-style: normal; color: #fff; white-space: nowrap;
+}
+.contrib__k { background: var(--accent); }
+.contrib__m { background: var(--inferred); opacity: .58; }
+
+/* ---- Cross-channel signal cards ---------------------------------------- */
+
+.signal {
+    display: block; width: 100%; text-align: left;
+    padding: var(--s3) var(--s4);
+    border-top: 1px solid var(--line-soft);
+    border-left: 2px solid transparent;
+    background: none; cursor: pointer;
+    transition: background var(--fast) var(--ease);
+}
+.signal:hover { background: var(--surface-2); }
+.signal--gem     { border-left-color: var(--inferred); }
+.signal--surface { border-left-color: var(--weak); }
+
+.signal__head { display: flex; align-items: baseline; gap: var(--s2); flex-wrap: wrap; }
+.signal__name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.signal__rank { font-size: 11px; color: var(--ink-4); margin-left: auto; }
+.signal__why {
+    font-size: 11.5px; color: var(--ink-3);
+    line-height: 1.55; margin-top: 4px;
+}
+
+/* ---- Staged loading ----------------------------------------------------- */
+
+.stage {
+    display: flex; align-items: baseline; gap: var(--s2);
+    font-size: 12.5px; color: var(--ink-2);
+    padding: 3px 0;
+    transition: opacity var(--fast) var(--ease);
+}
+.stage__tick {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--accent); width: 12px; flex: none;
+}
+
+/* ---- Side-by-side diff -------------------------------------------------- */
+
+.diff {
+    display: grid;
+    grid-template-columns: 1fr 96px 1fr;
+    gap: 5px;
+    align-items: center;
+    font-size: 11.5px;
+}
+.diff__who {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--ink-3);
+    padding-bottom: var(--s1);
+    border-bottom: 1px solid var(--line-soft);
+}
+.diff__who--right { text-align: right; }
+.diff__skill { text-align: center; color: var(--ink-4); font-size: 10.5px; }
+.diff__skill--decisive { color: var(--ink); font-weight: 500; }
+.diff .chip { cursor: default; }
+
+
+/* ---- Chat dock ----------------------------------------------------------
+   Pinned to the bottom of the inspector. It is capped rather than allowed to
+   grow, because the evidence above it is the thing being read. */
+
+.chat {
+    flex: none;
+    display: flex; flex-direction: column;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    max-height: 46%;
+}
+
+.chat__head {
+    display: flex; align-items: center; gap: var(--s2);
+    padding: var(--s2) var(--s4);
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--surface-2);
+    flex: none;
+}
+
+.chat__log {
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding: var(--s3) var(--s4);
+}
+
+.chat__suggest { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.chat__suggest .btn { font-size: 11.5px; text-align: left; }
+
+.bubble { margin-bottom: var(--s3); max-width: 100%; }
+.bubble--you {
+    margin-left: auto; width: fit-content;
+    background: var(--accent-tint);
+    border: 1px solid var(--accent-line);
+    border-radius: var(--r) var(--r) 2px var(--r);
+    padding: 5px var(--s2);
+}
+.bubble--you .bubble__text { color: var(--accent); font-weight: 500; }
+.bubble--engine {
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r) var(--r) var(--r) 2px;
+    padding: var(--s2);
+}
+.bubble__intent {
+    display: inline-block;
+    font-family: var(--mono); font-size: 9px; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--ink-4);
+    margin-bottom: 3px;
+}
+.bubble__text {
+    font-size: 12px; color: var(--ink); line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+}
+.bubble__refs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: var(--s2); }
+.bubble__refs .chip { cursor: pointer; }
+
+.chat__input {
+    display: flex; gap: var(--s2);
+    padding: var(--s2) var(--s4) var(--s3);
+    border-top: 1px solid var(--line-soft);
+    flex: none;
+}
+.chat__input input {
+    flex: 1; min-width: 0;
+    font: inherit; font-size: 12px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 5px var(--s2);
+}
+.chat__input input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface);
+}
+
 /* ---- Responsive --------------------------------------------------------- */
 
 @media (max-width: 1240px) {
@@ -519,7 +687,7 @@
     .inspector { display: none; }
     .workspace--detail { grid-template-columns: minmax(0, 1fr) var(--inspector); }
     .workspace--detail .rail { display: none; }
-    .workspace--detail .inspector { display: block; }
+    .workspace--detail .inspector { display: flex; }
 }
 
 @media (max-width: 860px) {
@@ -527,4 +695,235 @@
     .rail { display: none; }
     .workspace--detail .inspector { display: none; }
     .topbar__stats .stat { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Intake — staging a batch before analysing it
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.topbar--bare { background: transparent; backdrop-filter: none; }
+
+.intake { flex: 1; overflow-y: auto; padding: var(--s6) var(--s5) var(--s8); }
+.intake__inner { max-width: 940px; margin: 0 auto; }
+
+.intake h1 {
+    font-size: 26px; letter-spacing: -.022em; line-height: 1.25;
+    max-width: 22ch;
+}
+.intake__lede {
+    color: var(--ink-3); font-size: 13.5px; line-height: 1.65;
+    margin-top: var(--s3); max-width: 68ch;
+}
+.intake__error { margin-top: var(--s4); }
+
+.intake__grid {
+    display: grid; gap: var(--s4);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    margin-top: var(--s6);
+}
+
+.intake__panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: var(--s4);
+    display: flex; flex-direction: column; gap: var(--s3);
+    min-width: 0;
+}
+
+.intake__head { display: flex; align-items: center; gap: var(--s2); }
+.intake__count { font-size: 11.5px; color: var(--ink-4); margin-left: auto; }
+.intake__clear { height: 22px; padding: 0 6px; font-size: 11px; margin-left: 0; }
+
+.intake__actions {
+    display: flex; align-items: center; gap: var(--s3);
+    flex-wrap: wrap; margin-top: var(--s5);
+}
+.intake__spacer { flex: 1; min-width: var(--s4); }
+.intake__hint { margin-top: var(--s3); }
+
+/* ---- Drop target ---- */
+
+.drop {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; width: 100%;
+    padding: var(--s5) var(--s4);
+    border: 1px dashed var(--line);
+    border-radius: var(--r);
+    background: var(--surface-2);
+    text-align: center;
+    transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.drop:hover { border-color: var(--accent-line); background: var(--accent-tint); }
+.drop--over { border-color: var(--accent); background: var(--accent-tint); }
+.drop--compact { padding: var(--s3); }
+.drop__label { font-size: 12.5px; font-weight: 500; color: var(--ink); }
+.drop__hint { font-size: 11.5px; color: var(--ink-4); }
+
+/* ---- Staged file list ---- */
+
+.filelist { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.filelist--scroll { max-height: 268px; overflow-y: auto; }
+
+.filerow {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center; gap: var(--s2);
+    padding: 5px var(--s2);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    font-size: 12.5px;
+}
+.filerow:hover { background: var(--surface-3); }
+.filerow__name {
+    color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.filerow__size { font-size: 10.5px; color: var(--ink-4); }
+.filerow__x {
+    width: 18px; height: 18px; border-radius: var(--r-sm);
+    color: var(--ink-4); font-size: 15px; line-height: 1;
+    display: grid; place-items: center;
+}
+.filerow__x:hover { background: var(--missing-tint); color: var(--missing); }
+
+/* ---- Rail batch controls ---- */
+
+.railbtns { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.railbtn { flex: 1 1 auto; justify-content: center; min-width: 0; }
+
+.row__drop:hover {
+    background: var(--missing-tint); border-color: var(--missing-line);
+    color: var(--missing);
+}
+
+.panel__acts { display: flex; align-items: center; gap: 2px; margin-left: auto; }
+.btn--sm { height: 24px; padding: 0 var(--s2); font-size: 11.5px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Layout hardening
+
+   Flex children default to min-width:auto, so a long role title or a wide
+   number pushes its neighbours out of the bar instead of truncating. Every
+   flexible region that can receive unbounded text gets an explicit floor.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.brand { flex: none; }
+.topbar__role { min-width: 0; flex: 0 1 auto; overflow: hidden; }
+.topbar__role strong {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;
+}
+.topbar__role span { flex: none; white-space: nowrap; }
+.topbar__stats { flex: none; }
+
+/* line-height 1.1 on a 15px number clips its own descenders */
+.stat__v { line-height: 1.25; }
+
+.row__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row__meta { min-width: 0; }
+.panel__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 1180px) {
+    /* The two headline numbers go first: they are repeated in the rail, and the
+       controls beside them are not. */
+    .topbar__stats .stat { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Print — one page, for a candidate or the pool
+
+   The report lives in the normal document so it inherits every token; screen
+   hides it, print hides everything else.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.printable { display: none; }
+
+@media print {
+    @page { size: A4 portrait; margin: 13mm 12mm; }
+
+    html, body, #root { height: auto; overflow: visible; background: #fff; }
+    /* Report is a sibling of .app (not a child) so this does not hide it. */
+    .app { display: none !important; }
+
+    .printable { display: block !important; }
+
+    /* Print in the light palette whatever the screen is set to: a dark theme
+       lays down a full-bleed black page and reads as a fault, not a choice. */
+    .printable, .printable * {
+        color: #17170F !important;
+        background: transparent !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+}
+
+.rep { font-size: 10pt; line-height: 1.45; }
+
+.rep__head {
+    display: flex; align-items: flex-start; gap: var(--s4);
+    padding-bottom: 8px; border-bottom: 1.5px solid #17170F;
+}
+.rep__name { font-size: 19pt; letter-spacing: -.02em; line-height: 1.15; }
+.rep__sub { font-size: 9.5pt; color: #5C584F !important; margin-top: 2px; }
+.rep__score { margin-left: auto; text-align: right; }
+.rep__score-v { font-family: var(--mono); font-size: 22pt; font-weight: 600; line-height: 1; }
+.rep__score-l {
+    font-size: 7.5pt; text-transform: uppercase; letter-spacing: .07em;
+    color: #5C584F !important;
+}
+
+.rep__stamp {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 8pt;
+    color: #5C584F !important;
+    padding: 5px 0; border-bottom: 1px solid #DCDBD6;
+}
+.rep__stamp-right { margin-left: auto; }
+
+.rep__lede { margin-top: 9px; font-size: 10.5pt; }
+
+.rep__cols {
+    display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5);
+    margin-top: 10px;
+}
+
+.rep__sec { margin-top: 11px; break-inside: avoid; }
+.rep__sec h2 {
+    font-size: 8.5pt; text-transform: uppercase; letter-spacing: .08em;
+    color: #5C584F !important;
+    border-bottom: 1px solid #DCDBD6; padding-bottom: 3px; margin-bottom: 5px;
+}
+.rep__sec h3 {
+    font-size: 9pt; margin-top: 8px; margin-bottom: 3px; font-weight: 600;
+}
+.rep__sec p { margin-top: 4px; }
+
+.rep__t { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.rep__t td { padding: 2.5px 0; vertical-align: top; }
+.rep__t td:last-child { text-align: right; white-space: nowrap; padding-left: 8px; }
+.rep__t--rule th {
+    text-align: left; font-size: 8pt; text-transform: uppercase; letter-spacing: .05em;
+    color: #5C584F !important; border-bottom: 1px solid #DCDBD6; padding-bottom: 3px;
+}
+.rep__t--rule td { border-bottom: 1px solid #E9E8E4; padding: 3.5px 0; }
+.rep__t--rule td:last-child { text-align: left; }
+.rep__t--full td, .rep__t--full th { padding-right: 8px; }
+
+.rep__chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.rep__chip {
+    font-size: 8.5pt; padding: 1px 5px; border-radius: 3px;
+    border: 1px solid #DCDBD6;
+}
+.rep__chip em { font-style: normal; color: #5C584F !important; font-size: 7.5pt; }
+.rep__chip--matched  { border-color: #B4D3C1; }
+.rep__chip--inferred { border-color: #B9CFE4; }
+.rep__chip--weak     { border-color: #E3C88E; }
+.rep__chip--missing  { border-color: #EBB6AE; }
+
+.rep__flag { font-size: 9pt; margin-top: 6px; }
+.rep__foot { font-size: 8pt; color: #5C584F !important; margin-top: 4px; }
+.rep__ol { padding-left: 15px; margin-top: 4px; }
+.rep__ol li { list-style: decimal; margin-bottom: 3px; font-size: 9.5pt; }
+
+.rep__footer {
+    margin-top: 14px; padding-top: 5px;
+    border-top: 1px solid #DCDBD6;
+    font-size: 7.5pt; color: #5C584F !important;
 }

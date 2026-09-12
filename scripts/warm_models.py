@@ -32,7 +32,7 @@ def main() -> int:
     except Exception as exc:                      # noqa: BLE001 - we want every failure
         print(f"\nFAILED: {type(exc).__name__}: {exc}")
         print("\nThe pipeline still runs. Set the offline fallback:")
-        print("    export INTERLOOM_SEMANTIC=tfidf_svd")
+        print("    export SMARTHIRE_SEMANTIC=tfidf_svd")
         return 1
 
     load_s = time.perf_counter() - t0

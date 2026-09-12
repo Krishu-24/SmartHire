@@ -8,8 +8,54 @@
  * anyone opening a drawer.
  */
 
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { STATUSES, STATUS_LABEL, cls, pct, statusCounts } from '../lib/ui'
+
+/* ── Loading ───────────────────────────────────────────────────────────────
+   A first run embeds eighteen resumes and can fetch public repositories, which
+   takes long enough that a bare spinner reads as a hang. These are the real
+   stages in pipeline order, advanced on a timer rather than reported by the
+   server — the wait is worth narrating, and the order is honest even though
+   the timing is approximate. */
+
+const STAGES = [
+  'Parsing PDFs and stripping identity',
+  'Reading requirements out of the job description',
+  'Embedding resume chunks',
+  'Scoring both channels, skill by skill',
+  'Checking claims against public code',
+  'Fusing, flagging and explaining',
+]
+
+function LoadingBoard() {
+  const [stage, setStage] = useState(0)
+
+  useEffect(() => {
+    const t = setInterval(() => setStage((n) => Math.min(n + 1, STAGES.length - 1)), 2600)
+    return () => clearInterval(t)
+  }, [])
+
+  return (
+    <div className="board">
+      <div className="panel">
+        <div className="panel__body">
+          {STAGES.map((label, i) => (
+            <div key={label} className="stage" style={{ opacity: i <= stage ? 1 : 0.35 }}>
+              <span className="stage__tick">
+                {i < stage ? '✓' : i === stage ? '▸' : '·'}
+              </span>
+              {label}{i === stage ? '…' : ''}
+            </div>
+          ))}
+        </div>
+      </div>
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="skeleton" style={{ opacity: 1 - i * 0.13 }} />
+      ))}
+    </div>
+  )
+}
 
 function EvidenceBar({ candidate }) {
   const counts = statusCounts(candidate)
@@ -32,6 +78,9 @@ function EvidenceBar({ candidate }) {
     </div>
   )
 }
+
+// Above this, a row wraps. The rest stay visible in the inspector.
+const MAX_FLAGS = 3
 
 function Flags({ candidate }) {
   const p = candidate.primitives
@@ -58,31 +107,45 @@ function Flags({ candidate }) {
   if (p.quality < 0.5) {
     out.push(<span key="q" className="chip chip--weak" title="This PDF was hard to read; review manually.">Parse {p.quality.toFixed(2)}</span>)
   }
-  return out
+
+  // Flags are ordered most-alarming-first above, so truncating takes the tail.
+  // Left uncapped, a candidate carrying five of them wraps the row onto a
+  // second line and the board stops scanning as a column of equal rows.
+  if (out.length <= MAX_FLAGS) return out
+  const hidden = out.length - MAX_FLAGS
+  return [
+    ...out.slice(0, MAX_FLAGS),
+    <span key="more" className="chip chip--mono"
+          title="Open this candidate to see every flag.">+{hidden}</span>,
+  ]
 }
 
-export default function Board({ candidates, selected, onSelect, loading }) {
-  if (loading) {
-    return (
-      <div className="board">
-        {Array.from({ length: 8 }, (_, i) => <div key={i} className="skeleton" />)}
-      </div>
-    )
-  }
+export default function Board({ candidates, selected, onSelect, loading, compare, onCompare,
+                               onRemove }) {
+  if (loading) return <LoadingBoard />
 
   return (
     <LayoutGroup>
-      <div className="board">
+      <div className="board" role="listbox" aria-label="Ranked candidates">
         <AnimatePresence initial={false}>
           {candidates.map((c) => (
-            <motion.button
+            /* A div, not a button: the compare toggle is a control of its own
+               and nesting one button inside another is invalid markup that
+               screen readers handle badly. Keyboard behaviour is restored
+               explicitly below. */
+            <motion.div
               key={c.doc_id}
               layout
               transition={{ type: 'spring', stiffness: 520, damping: 42 }}
               className={`row ${c.rank <= 3 ? 'row--top' : ''} ${
                 c.primitives.doc_multiplier < 1 ? 'row--penalised' : ''}`}
+              role="option"
+              tabIndex={0}
               aria-selected={selected?.doc_id === c.doc_id}
               onClick={() => onSelect(c)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(c) }
+              }}
             >
               <div className="row__rank num">{String(c.rank).padStart(2, '0')}</div>
 
@@ -91,6 +154,25 @@ export default function Board({ candidates, selected, onSelect, loading }) {
                 <div className="row__meta">
                   <span className="chip chip--mono">{pct(c.primitives.req_coverage)} required</span>
                   <Flags candidate={c} />
+                  {onCompare && (
+                    <button
+                      className={`chip chip--mono ${compare?.includes(c.doc_id) ? 'chip--accent' : ''}`}
+                      aria-pressed={compare?.includes(c.doc_id) ?? false}
+                      title="Pick two candidates to see them side by side."
+                      onClick={(e) => { e.stopPropagation(); onCompare(c.doc_id) }}
+                    >
+                      compare
+                    </button>
+                  )}
+                  {onRemove && (
+                    <button
+                      className="chip chip--mono row__drop"
+                      title={`Remove ${c.name} from the pool and re-rank without them`}
+                      onClick={(e) => { e.stopPropagation(); onRemove(c.doc_id) }}
+                    >
+                      remove
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -100,7 +182,7 @@ export default function Board({ candidates, selected, onSelect, loading }) {
                 <div className="row__score-v">{c.score.toFixed(1)}</div>
                 <div className="row__score-sub">K {c.k_score.toFixed(2)} · M {c.m_score.toFixed(2)}</div>
               </div>
-            </motion.button>
+            </motion.div>
           ))}
         </AnimatePresence>
       </div>

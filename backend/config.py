@@ -18,15 +18,15 @@ DATA = BACKEND / "data"
 # ─── Device ──────────────────────────────────────────────────────────────────
 # Hardware decision (Phase 2): pure local on Apple Silicon. CPU is the default
 # because 18 resumes is far below the batch size where a GPU pays for itself,
-# and CPU avoids every MPS dtype quirk. Opt in with INTERLOOM_DEVICE=mps.
-DEVICE = os.environ.get("INTERLOOM_DEVICE", "cpu")
+# and CPU avoids every MPS dtype quirk. Opt in with SMARTHIRE_DEVICE=mps.
+DEVICE = os.environ.get("SMARTHIRE_DEVICE", os.environ.get("INTERLOOM_DEVICE", "cpu"))
 
 
 # ─── Semantic backend ────────────────────────────────────────────────────────
 # "minilm"     — sentence-transformers all-MiniLM-L6-v2 (default)
 # "tfidf_svd"  — scikit-learn TF-IDF + TruncatedSVD, the offline fallback.
 #                Degraded quality, but the pipeline survives a dead venue wifi.
-SEMANTIC_BACKEND = os.environ.get("INTERLOOM_SEMANTIC", "minilm")
+SEMANTIC_BACKEND = os.environ.get("SMARTHIRE_SEMANTIC", os.environ.get("INTERLOOM_SEMANTIC", "minilm"))
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 SVD_DIMS = 256
 

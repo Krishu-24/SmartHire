@@ -1,6 +1,7 @@
 # Problem Statement Alignment & Feature Matrix
 
-*Direct mapping from the InternLoom hackathon brief to what's actually built,
+*Direct mapping from the InternLoom hackathon brief to what's actually built
+in SmartHire,*
 plus everything added beyond the minimum. Use this to write the pitch script.*
 
 ---

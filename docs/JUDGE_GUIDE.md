@@ -1,6 +1,6 @@
 # Judge's Walkthrough & Quick-Start Guide
 
-*For first-time viewers and non-technical evaluators. Read this before you open the app.*
+*For first-time viewers and non-technical evaluators looking at **SmartHire**. Read this before you open the app.*
 
 ---
 

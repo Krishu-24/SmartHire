@@ -30,7 +30,7 @@ from backend.core import (
     interview as interview_mod, parser, rampup as rampup_mod, skills, taxonomy,
 )
 
-app = FastAPI(title="InterLoom Shortlisting Engine", version="2.0.0")
+app = FastAPI(title="SmartHire Shortlisting Engine", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -93,45 +93,66 @@ _ENGINE = engine_mod.Engine()
 # Analysis
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _analyse(jd_path: pathlib.Path, resume_paths: list[pathlib.Path],
-             alpha: float, gate: bool, blind_mode: bool, enrichment: bool):
-    t0 = time.perf_counter()
+def _read_jd(jd_path: pathlib.Path) -> parser.ParsedDoc:
+    """Parse a job description, keeping its identity intact.
 
-    # The JD keeps its identity: the bias detector hunts for gendered pronouns and
-    # school filters, which are precisely the strings redaction removes.
+    The bias detector hunts for gendered pronouns and school filters, which are
+    precisely the strings redaction removes — so the JD is never anonymised.
+    """
     jd = parser.extract(jd_path, anonymise=False)
     if not jd.text.strip():
         raise HTTPException(422, "The job description could not be read. "
                                  "It may be a scanned image with no text layer.")
+    return jd
 
-    skill_set = skills.extract_skills(jd.text)
+
+def _rebuild(alpha: float, gate: bool, blind_mode: bool):
+    """Re-score whatever is currently in the session.
+
+    Everything that changes a pool — a new JD, an added candidate, a removed one
+    — routes through here rather than re-implementing the pipeline. The engine's
+    chunk-embedding cache means this is cheap: swapping the JD re-embeds nothing
+    at all, and adding one resume embeds only that resume.
+    """
+    if SESSION.jd is None or not SESSION.docs:
+        raise HTTPException(409, "Nothing to score. POST /api/analyze first.")
+
+    t0 = time.perf_counter()
+
+    skill_set = skills.extract_skills(SESSION.jd.text)
     if not skill_set:
         raise HTTPException(422, "No skills could be extracted from that job description.")
 
-    docs = parser.extract_many(resume_paths)
-    subs = _ENGINE.build(docs, jd.text, skill_set)
+    docs = SESSION.docs
+    subs = _ENGINE.build(docs, SESSION.jd.text, skill_set)
     primitives = fusion.prepare(subs, skill_set)
 
     # Integrity, external evidence and claim verification all need the built
     # matrix before they can judge anything, so they run here and hand back
     # multipliers rather than being folded into prepare().
-    assessment = assess_mod.build(docs, skill_set, primitives, enrichment_enabled=enrichment)
+    assessment = assess_mod.build(docs, skill_set, primitives,
+                                  enrichment_enabled=SESSION.enrichment_enabled)
     fusion.adjust(primitives, assessment.adjustments)
 
-    SESSION.jd = jd
-    SESSION.docs = docs
     SESSION.skills = skill_set
     SESSION.primitives = primitives
     SESSION.assessment = assessment
     SESSION.backend_name = _ENGINE.backend_name
-    SESSION.enrichment_enabled = enrichment
     SESSION.bias = bias_detector.detect(
-        jd.text, primitives, skill_set,
+        SESSION.jd.text, primitives, skill_set,
         {d.name: d.text for d in docs}, alpha=alpha,
     )
     SESSION.elapsed_ms = int((time.perf_counter() - t0) * 1000)
 
     return _payload(alpha, gate, blind_mode)
+
+
+def _analyse(jd_path: pathlib.Path, resume_paths: list[pathlib.Path],
+             alpha: float, gate: bool, blind_mode: bool, enrichment: bool):
+    SESSION.jd = _read_jd(jd_path)
+    SESSION.docs = parser.extract_many(resume_paths)
+    SESSION.enrichment_enabled = enrichment
+    return _rebuild(alpha, gate, blind_mode)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -395,7 +416,7 @@ async def analyze(
     if not resumes:
         raise HTTPException(400, "Upload at least one resume.")
 
-    tmp = pathlib.Path(tempfile.mkdtemp(prefix="interloom_"))
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="smarthire_"))
     try:
         jd_path = tmp / (jd.filename or "jd.pdf")
         jd_path.write_bytes(await jd.read())
@@ -438,6 +459,102 @@ def analyze_sample(
         )
     resumes = sorted(p for p in SAMPLE_DIR.glob("*.pdf") if not p.name.startswith("jd_"))
     return _analyse(jd_path, resumes, alpha, gate, blind_mode, enrichment)
+
+
+@app.post("/api/jd", response_model=models.AnalyzeResponse)
+async def replace_jd(
+    jd: UploadFile = File(...),
+    alpha: float = Form(config.DEFAULT_ALPHA),
+    gate: bool = Form(config.GATE_ENABLED_DEFAULT),
+    blind_mode: bool = Form(config.BLIND_MODE_DEFAULT),
+) -> models.AnalyzeResponse:
+    """Swap the job description without re-uploading the pool.
+
+    The resumes do not change, so nothing about them needs re-reading: their
+    chunks are already parsed and already embedded. Only the requirement set,
+    the BM25 query and the per-skill cosines are recomputed — which is why
+    re-targeting a pool at a different role takes about a second rather than
+    the full ingest.
+    """
+    if not SESSION.docs:
+        raise HTTPException(409, "No candidate pool loaded. POST /api/analyze first.")
+
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="smarthire_jd_"))
+    try:
+        jd_path = tmp / (jd.filename or "jd.pdf")
+        jd_path.write_bytes(await jd.read())
+        SESSION.jd = _read_jd(jd_path)
+        return _rebuild(alpha, gate, blind_mode)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.post("/api/candidates", response_model=models.AnalyzeResponse)
+async def add_candidates(
+    resumes: list[UploadFile] = File(...),
+    alpha: float = Form(config.DEFAULT_ALPHA),
+    gate: bool = Form(config.GATE_ENABLED_DEFAULT),
+    blind_mode: bool = Form(config.BLIND_MODE_DEFAULT),
+) -> models.AnalyzeResponse:
+    """Add resumes to the live pool.
+
+    Only the new files are parsed and embedded; everyone already in the pool is
+    reused. Their scores still move, and should — the normalisation anchors are
+    pool-relative, so adding a strong candidate genuinely changes where everyone
+    else stands.
+    """
+    if not SESSION.docs or SESSION.jd is None:
+        raise HTTPException(409, "No pool to add to. POST /api/analyze first.")
+    if not resumes:
+        raise HTTPException(400, "Upload at least one resume.")
+
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="smarthire_add_"))
+    try:
+        paths = []
+        for item in resumes:
+            dest = tmp / (item.filename or f"resume_{len(paths)}.pdf")
+            dest.write_bytes(await item.read())
+            paths.append(dest)
+
+        fresh = parser.extract_many(paths)
+        existing = {d.doc_id for d in SESSION.docs}
+
+        for doc in fresh:
+            if doc.doc_id in existing:
+                # Same filename: treat it as a correction rather than a duplicate,
+                # and drop the stale vectors so the new file is really re-read.
+                _ENGINE.forget(doc.doc_id)
+                SESSION.docs = [d for d in SESSION.docs if d.doc_id != doc.doc_id]
+            SESSION.docs.append(doc)
+
+        return _rebuild(alpha, gate, blind_mode)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.delete("/api/candidates/{doc_id}", response_model=models.AnalyzeResponse)
+def remove_candidate(
+    doc_id: str,
+    alpha: float = config.DEFAULT_ALPHA,
+    gate: bool = config.GATE_ENABLED_DEFAULT,
+    blind_mode: bool = config.BLIND_MODE_DEFAULT,
+) -> models.AnalyzeResponse:
+    """Drop one candidate from the pool and re-rank without them."""
+    if not SESSION.docs or SESSION.jd is None:
+        raise HTTPException(409, "Nothing analysed yet. POST /api/analyze first.")
+
+    remaining = [d for d in SESSION.docs if d.doc_id != doc_id]
+    if len(remaining) == len(SESSION.docs):
+        raise HTTPException(404, f"No candidate {doc_id} in the current pool.")
+    if not remaining:
+        raise HTTPException(400, "That is the last candidate — a pool of nobody cannot be ranked.")
+
+    SESSION.docs = remaining
+    _ENGINE.forget(doc_id)
+    if SESSION.assessment is not None:
+        SESSION.assessment.enrichment.pop(doc_id, None)
+
+    return _rebuild(alpha, gate, blind_mode)
 
 
 @app.get("/api/rank", response_model=models.AnalyzeResponse)

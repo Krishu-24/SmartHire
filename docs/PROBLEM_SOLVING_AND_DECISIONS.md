@@ -165,7 +165,7 @@ candidate term if that word is already part of a known phrase.
 ### CPU (Apple Silicon), not GPU, and not a distributed model router
 The team had access to three RTX 4060 laptops over LAN in addition to the
 primary MacBook. **Decision: pure local execution, CPU by default, MPS
-available via `INTERLOOM_DEVICE=mps` but never required.** At a batch size of
+available via `SMARTHIRE_DEVICE=mps` but never required.** At a batch size of
 15–18 resumes (a few hundred embedding chunks total), a GPU has nothing
 meaningful to batch — measured cold-start time for the *entire* pipeline
 (parse + embed + score for 18 resumes) is under 12 seconds, and the model

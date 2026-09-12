@@ -15,6 +15,7 @@ pure arithmetic over these primitives.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 
@@ -143,12 +144,72 @@ class Engine:
         self.backend_name: str = ""
         self._sub: list[SubScores] = []
 
+        # The loaded model, kept across builds. Re-creating it per build meant
+        # every re-analysis paid the ~16s SentenceTransformer load again — which
+        # is the whole cost of swapping a JD or adding one resume.
+        self._backend = None
+
+        # doc_id -> (fingerprint, embedding matrix). A resume's chunks do not
+        # change when the JD does, so swapping the job description re-embeds
+        # nothing at all, and adding a candidate embeds only that candidate.
+        self._chunk_cache: dict[str, tuple[str, np.ndarray]] = {}
+
+    def forget(self, doc_id: str) -> None:
+        """Drop one document's cached embeddings (it left the pool, or was replaced)."""
+        self._chunk_cache.pop(doc_id, None)
+
+    def _get_backend(self):
+        """The embedding backend, created once.
+
+        TF-IDF is the exception: it is fitted against a specific corpus, so it
+        must be rebuilt whenever the pool changes. MiniLM is a pure encoder and
+        is safe to hold forever.
+        """
+        if self._backend is not None and not isinstance(self._backend, _TfidfSvdBackend):
+            return self._backend
+        self._backend = _make_backend()
+        return self._backend
+
+    @staticmethod
+    def _fingerprint(doc: ParsedDoc) -> str:
+        """Identity of a document's chunk content.
+
+        Keyed on the text rather than on doc_id alone: doc_id is the filename
+        stem, so uploading a different resume under a name already in the pool
+        would otherwise be served another candidate's vectors.
+        """
+        h = hashlib.blake2b(digest_size=16)
+        for chunk in doc.chunks:
+            h.update(chunk.text.encode("utf-8", "replace"))
+            h.update(b"\x00")
+        return h.hexdigest()
+
+    def _encode_chunks(self, backend, docs: list[ParsedDoc]) -> np.ndarray:
+        """Chunk embeddings for the whole pool, reusing anything already computed."""
+        prints = {d.doc_id: self._fingerprint(d) for d in docs}
+        fresh = [d for d in docs
+                 if self._chunk_cache.get(d.doc_id, ("", None))[0] != prints[d.doc_id]]
+
+        if fresh:
+            texts = [c.text for d in fresh for c in d.chunks]
+            encoded = backend.encode(texts)
+            cursor = 0
+            for d in fresh:
+                n = len(d.chunks)
+                self._chunk_cache[d.doc_id] = (prints[d.doc_id], encoded[cursor:cursor + n])
+                cursor += n
+
+        blocks = [self._chunk_cache[d.doc_id][1] for d in docs if d.chunks]
+        if not blocks:
+            return backend.encode([])
+        return np.vstack(blocks)
+
     # -- build ---------------------------------------------------------------
 
     def build(self, docs: list[ParsedDoc], jd_text: str, skills: list[Skill]) -> list[SubScores]:
         self.docs, self.jd_text, self.skills = docs, jd_text, skills
 
-        backend = _make_backend()
+        backend = self._get_backend()
         self.backend_name = backend.name
 
         jd_canonical = normalizer.canonicalize(jd_text)
@@ -171,9 +232,11 @@ class Engine:
         skill_phrases = [s.phrase for s in skills]
 
         if isinstance(backend, _TfidfSvdBackend):
+            # A refitted TF-IDF space invalidates every cached vector.
+            self._chunk_cache.clear()
             backend.fit(chunk_texts + skill_phrases + [jd_text])
 
-        chunk_emb = backend.encode(chunk_texts)
+        chunk_emb = self._encode_chunks(backend, docs)
         skill_emb = backend.encode(skill_phrases)
         jd_emb = backend.encode([jd_text])
 

@@ -189,7 +189,7 @@ evidence citation.
 
 A `TfidfSvdBackend` (scikit-learn `TfidfVectorizer` + `TruncatedSVD`) exists
 as an offline fallback if the embedding model can't be loaded (dead network,
-missing cache), selected automatically or via `INTERLOOM_SEMANTIC=tfidf_svd`.
+missing cache), selected automatically or via `SMARTHIRE_SEMANTIC=tfidf_svd`.
 Degraded quality, but the pipeline never hard-fails for lack of a model.
 
 ---

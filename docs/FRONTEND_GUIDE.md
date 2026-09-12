@@ -39,15 +39,19 @@ definition on bare `:root` first, so no token exists only inside a media query.
 ```
 src/
   index.css              tokens, reset, shared atoms — retheme from here
-  App.css                layout and components
-  App.jsx                shell: state, tabs, the two toggles
+  App.css                layout and components (includes print stylesheet)
+  App.jsx                shell: intake, tabs, live pool edits, print
   lib/
     rescore.js           client-side mirror of fusion.score()
     ui.js                theme hook, formatting, the status vocabulary
   components/
-    Board.jsx            the ranked rows
+    Intake.jsx           stage JD + resumes before analysing
+    Board.jsx            the ranked rows (compare / remove)
     Detail.jsx           the per-candidate inspector (5 views) + <Path>
-    Views.jsx            whole-pool views (4)
+    Views.jsx            Signals, Diff, Fusion, Taxonomy, Audit, Feedback
+    Chat.jsx             ask-the-shortlist dock (templated, no LLM)
+    Charts.jsx           hand-drawn SVG charts
+    Report.jsx           one-page printable summary / candidate sheet
 ```
 
 ---
@@ -66,9 +70,16 @@ parse time and never reaches the engine, so the server only re-renders which
 name goes on a row and re-masks the resume text. That is the whole claim, and
 the reason it is safe to flip mid-demo: the numbers do not move.
 
-Five top-level tabs: Shortlist, Fusion inspector, Skill ontology, JD audit,
-Candidate feedback. Selecting a candidate opens the right-hand inspector; on
-narrow viewports the inspector replaces the control rail rather than squeezing it.
+**Print** mounts `Report.jsx` as a sibling of `.app` (not a child). The print
+stylesheet hides `.app` and reveals `.printable`; clearing the report before
+`afterprint` blanks the page, so unmount waits for the dialog to finish.
+
+Six top-level tabs: Shortlist, Signals, Fusion inspector, Skill ontology, JD
+audit, Candidate feedback. Selecting a candidate opens the right-hand inspector;
+the chat dock underneath stays reachable whether or not a row is open.
+
+Live pool edits (Change JD / Add candidates / Remove) re-score on the server
+without re-embedding unchanged resumes.
 
 ---
 
@@ -106,8 +117,9 @@ matrix, the chips and the ontology view from slowly disagreeing about what amber
 means.
 
 `useTheme()` writes `data-theme` onto `document.documentElement` and persists to
-`localStorage`, wrapped in try/catch — a private window or blocked site data
-must not take the app down, and the theme still applies for the session.
+`localStorage` under `smarthire:theme`, wrapped in try/catch — a private window
+or blocked site data must not take the app down, and the theme still applies for
+the session.
 
 ---
 
@@ -149,6 +161,11 @@ Also exports **`<Path>`**, the `A → B → C` ontology renderer, reused by `Vie
 
 ## `components/Views.jsx`
 
+**`SignalsView`** — candidates where the two channels disagree (hidden gems and
+surface matches), with the gap scatter for the whole pool.
+
+**`DiffPanel`** — side-by-side of at most two compared candidates from the board.
+
 **`FusionInspector`** — both channel rankings, the RRF score, the RRF rank and
 its disagreement with the blended rank, one row per candidate.
 
@@ -166,6 +183,14 @@ requirement the engine read out of the JD with the line it came from.
 
 **`FeedbackView`** — fetched on demand (it is the expensive one), expandable per
 candidate, with the draft rejection note and a copy button.
+
+---
+
+## `components/Report.jsx`
+
+One-page printable sheet for the pool summary or a single candidate. Hidden on
+screen (`.printable { display: none }`), shown only under `@media print`. Must
+live outside `.app` so hiding the UI does not also hide the report.
 
 ---
 

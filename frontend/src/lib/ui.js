@@ -60,7 +60,7 @@ export function statusCounts(candidate) {
 
 /* ── Theme ─────────────────────────────────────────────────────────────── */
 
-const THEME_KEY = 'interloom:theme'
+const THEME_KEY = 'smarthire:theme'
 
 /**
  * Light/dark, persisted, following the OS until the user chooses.
