@@ -1,0 +1,23 @@
+Ishita Ghosh
+Kolkata, India | ishita.ghosh@email.com
+
+EDUCATION
+B.Tech Computer Science, 2022 - 2026
+
+EXPERIENCE
+Software Intern, Postman
+May 2025 - Nov 2025
+- Built React interfaces in TypeScript for the API documentation product
+- Wrote Node.js services exposing REST APIs consumed by the web client
+- Authored GraphQL resolvers over an existing REST layer
+- Maintained Jest test suites and set up Playwright end-to-end coverage
+- Reviewed pull requests and worked in two-week Agile sprints
+
+PROJECTS
+SpecViewer - OpenAPI specification browser
+- React and TypeScript frontend, Node.js backend, REST API
+- Responsive HTML and CSS, dark mode support
+
+SKILLS
+JavaScript, TypeScript, React, Node.js, REST APIs, GraphQL, Git, Jest,
+Playwright, HTML, CSS, Agile

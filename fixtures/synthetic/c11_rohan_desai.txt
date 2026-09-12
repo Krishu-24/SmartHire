@@ -1,0 +1,22 @@
+Rohan Desai
+Ahmedabad, India | rohan.desai@email.com
+
+EDUCATION
+B.E. Computer Engineering, 2021 - 2025
+
+EXPERIENCE
+Web Developer Intern, Infibeam
+Jul 2024 - Mar 2025
+- Built product listing and checkout screens in React
+- Consumed REST APIs provided by the platform team
+- Wrote SQL queries against MySQL for reporting dashboards
+- Maintained responsive HTML and CSS templates
+- Git based workflow with feature branches
+
+PROJECTS
+ShopLocal - Marketplace prototype
+- React frontend consuming a third party REST API
+- MySQL database schema design and query optimisation
+
+SKILLS
+JavaScript, React, HTML, CSS, SQL, MySQL, REST APIs, Git, Bootstrap, jQuery

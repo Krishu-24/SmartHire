@@ -1,0 +1,131 @@
+{
+  "_comment": "Surface form -> canonical form. Applied during normalisation so that lexical matching, BM25 tokenisation and skill lookup all agree on one spelling. Keys are matched case-insensitively on word boundaries; longest key wins.",
+
+  "js": "javascript",
+  "java script": "javascript",
+  "javscript": "javascript",
+  "javascipt": "javascript",
+  "ecmascript": "javascript",
+  "es6": "javascript",
+
+  "ts": "typescript",
+  "type script": "typescript",
+  "typescipt": "typescript",
+
+  "reactjs": "react",
+  "react.js": "react",
+  "react js": "react",
+  "reacts": "react",
+  "react native": "react native",
+
+  "nodejs": "node.js",
+  "node js": "node.js",
+  "node": "node.js",
+  "node.js": "node.js",
+  "nodejs runtime": "node.js",
+
+  "expressjs": "express",
+  "express.js": "express",
+  "express js": "express",
+
+  "nextjs": "next.js",
+  "next js": "next.js",
+
+  "vuejs": "vue",
+  "vue.js": "vue",
+  "angularjs": "angular",
+  "angular.js": "angular",
+
+  "mongo": "mongodb",
+  "mongo db": "mongodb",
+  "mongodb atlas": "mongodb",
+  "mongoose": "mongoose",
+
+  "postgres": "postgresql",
+  "postgre sql": "postgresql",
+  "postgres sql": "postgresql",
+  "psql": "postgresql",
+
+  "my sql": "mysql",
+  "ms sql": "sql server",
+  "mssql": "sql server",
+
+  "rest api": "rest api",
+  "rest apis": "rest api",
+  "rest ap": "rest api",
+  "restful": "rest api",
+  "restful api": "rest api",
+  "restful apis": "rest api",
+  "restful services": "rest api",
+  "rest services": "rest api",
+  "web api": "rest api",
+  "web apis": "rest api",
+
+  "graph ql": "graphql",
+
+  "html5": "html",
+  "css3": "css",
+  "scss": "sass",
+  "tailwindcss": "tailwind",
+  "tailwind css": "tailwind",
+
+  "git hub": "github",
+  "git lab": "gitlab",
+  "github actions": "ci/cd",
+  "gitlab ci": "ci/cd",
+  "continuous integration": "ci/cd",
+  "continuous deployment": "ci/cd",
+  "ci cd": "ci/cd",
+
+  "amazon web services": "aws",
+  "google cloud platform": "gcp",
+  "google cloud": "gcp",
+  "microsoft azure": "azure",
+
+  "k8s": "kubernetes",
+  "docker compose": "docker",
+  "dockerised": "docker",
+  "dockerized": "docker",
+  "containerised": "docker",
+  "containerized": "docker",
+
+  "unit testing": "testing",
+  "unit tests": "testing",
+  "test driven development": "testing",
+  "tdd": "testing",
+  "jest framework": "jest",
+
+  "py": "python",
+  "python3": "python",
+  "golang": "go",
+  "c sharp": "c#",
+  "c plus plus": "c++",
+  "cpp": "c++",
+
+  "postgres db": "postgresql",
+  "json web token": "jwt",
+  "json web tokens": "jwt",
+  "web socket": "websockets",
+  "web sockets": "websockets",
+
+  "agile methodology": "agile",
+  "agile methodologies": "agile",
+  "scrum master": "scrum",
+
+  "version control": "git",
+  "source control": "git",
+
+  "front end": "frontend",
+  "front-end": "frontend",
+  "back end": "backend",
+  "back-end": "backend",
+  "full stack": "full stack",
+  "full-stack": "full stack",
+  "fullstack": "full stack",
+
+  "user interface": "ui",
+  "user experience": "ux",
+  "responsive design": "responsive design",
+  "responsive layout": "responsive design",
+  "responsive layouts": "responsive design"
+}

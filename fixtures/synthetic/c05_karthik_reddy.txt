@@ -1,0 +1,12 @@
+Karthik Reddy chennai karthik.reddy@email.com +91 98765 43210
+i am a final year computer science student graduating 2026 who has spent the last
+two years building web applications mostly with javascript. from 01/2024-06/2024 i
+interned at a logistics startup where i wrote react components for their tracking
+dashboard and helped connect them to rest apis written by the backend team. later
+Summer 2024 i worked on a side project called routeplan which used node and express
+with a mongodb database to store delivery routes, i deployed it myself using docker
+on a digitalocean droplet. during 2023-24 i also did freelance work building small
+business websites with html css and some javascript, handled git for all of these
+projects and got comfortable with branching and merging. i have used sql lightly
+mostly sqlite for small things. currently learning typescript and writing tests
+with jest. comfortable working in a team, did agile sprints at the logistics startup.

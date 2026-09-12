@@ -1,0 +1,21 @@
+# InterLoom — Smart Shortlisting Engine
+# Python 3.12 (NOT the default 3.14 — torch/sentence-transformers path is better travelled on 3.12)
+
+# --- API layer ---
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+
+# --- Ingestion ---
+pymupdf                 # primary PDF extraction, C-backed, fast
+pdfplumber              # layout-aware fallback for multi-column resumes
+
+# --- Channel K: lexical ---
+rank-bm25               # BM25-Okapi, pure python, zero deps
+rapidfuzz               # C++ fuzzy matching for typo tolerance
+
+# --- Channel M: semantic ---
+sentence-transformers   # all-MiniLM-L6-v2 (pulls torch — the big one)
+numpy
+scikit-learn            # TF-IDF + TruncatedSVD fallback if the model is unavailable

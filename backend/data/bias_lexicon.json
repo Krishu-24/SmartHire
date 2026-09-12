@@ -1,0 +1,91 @@
+{
+  "_comment": "Layer 1 of the bias detector: pattern-matched phrasing in the JD itself. Layer 2 (impact simulation, in bias_detector.py) measures how many real candidates each hard requirement actually excludes — that layer is the one that produces evidence rather than opinion. `pattern` is a regex applied case-insensitively with word boundaries.",
+
+  "categories": {
+    "gender_coded": {
+      "label": "Gender-coded language",
+      "severity": "medium",
+      "why": "Research on job adverts finds aggressive, competitive phrasing measurably reduces application rates from women.",
+      "terms": [
+        {"pattern": "rockstar|rock star", "suggestion": "skilled engineer"},
+        {"pattern": "ninja|guru|wizard|jedi", "suggestion": "experienced developer"},
+        {"pattern": "aggressive|dominant|fearless|relentless", "suggestion": "proactive"},
+        {"pattern": "competitive(ly)? driven|killer instinct", "suggestion": "motivated"},
+        {"pattern": "he/him|she/her|\\bhis\\b resume|\\bher\\b resume", "suggestion": "they/them"},
+        {"pattern": "manpower|man hours", "suggestion": "staffing, person-hours"},
+        {"pattern": "strong[- ]willed|hard[- ]charging", "suggestion": "committed"}
+      ]
+    },
+
+    "age_coded": {
+      "label": "Age-coded language",
+      "severity": "high",
+      "why": "Signals a preference for younger applicants, which is both exclusionary and in many jurisdictions unlawful.",
+      "terms": [
+        {"pattern": "young|youthful", "suggestion": "early-career"},
+        {"pattern": "energetic|high[- ]energy|vibrant", "suggestion": "engaged"},
+        {"pattern": "digital native", "suggestion": "comfortable with modern tooling"},
+        {"pattern": "recent grad(uate)?s? only|fresh grad(uate)?s? only", "suggestion": "open to early-career candidates"},
+        {"pattern": "mature candidate|seasoned veteran", "suggestion": "experienced candidate"},
+        {"pattern": "born (after|before) \\d{4}", "suggestion": "remove"}
+      ]
+    },
+
+    "exclusionary": {
+      "label": "Exclusionary requirements",
+      "severity": "high",
+      "why": "Screens out qualified candidates on grounds unrelated to the ability to do the job.",
+      "terms": [
+        {"pattern": "native (english )?speaker", "suggestion": "strong written and spoken communication"},
+        {"pattern": "must own a (car|vehicle|laptop)", "suggestion": "remove, or state that equipment is provided"},
+        {"pattern": "no (career )?gaps", "suggestion": "remove"},
+        {"pattern": "must be (available )?(24/7|around the clock)", "suggestion": "state actual working hours"},
+        {"pattern": "unmarried|single candidates|no family commitments", "suggestion": "remove"},
+        {"pattern": "male candidates|female candidates only|only (men|women)", "suggestion": "remove"}
+      ]
+    },
+
+    "ableist": {
+      "label": "Ableist phrasing",
+      "severity": "medium",
+      "why": "Physical framing of work that is not physically demanding excludes disabled applicants for no reason.",
+      "terms": [
+        {"pattern": "must be able to stand|able to lift|physically fit", "suggestion": "remove unless genuinely essential to the role"},
+        {"pattern": "see[- ]ing clearly|perfect vision|excellent eyesight", "suggestion": "remove"},
+        {"pattern": "walk[- ]in|hit the ground running", "suggestion": "ready to contribute quickly"},
+        {"pattern": "crazy|insane|lame|blind to", "suggestion": "use precise language"}
+      ]
+    },
+
+    "elitist": {
+      "label": "Credential elitism",
+      "severity": "high",
+      "why": "Institution filters correlate with socioeconomic background far more than with engineering ability.",
+      "terms": [
+        {"pattern": "tier[- ]?1 (college|institute|university)", "suggestion": "remove"},
+        {"pattern": "\\b(iit|nit|bits|ivy league)\\b[^.]{0,30}(only|preferred|graduates)", "suggestion": "remove"},
+        {"pattern": "top[- ]tier (college|university|school)", "suggestion": "remove"},
+        {"pattern": "premier institute|elite (college|university)", "suggestion": "remove"},
+        {"pattern": "minimum (cgpa|gpa) of \\d", "suggestion": "consider removing, or lower substantially"},
+        {"pattern": "\\d{1,2}% (in|throughout) (10th|12th|academics)", "suggestion": "remove"}
+      ]
+    },
+
+    "narrow_phrasing": {
+      "label": "Overly narrow requirements",
+      "severity": "high",
+      "why": "Hard thresholds and long mandatory tool lists exclude candidates who could do the job well. Layer 2 measures the real cost against this applicant pool.",
+      "terms": [
+        {"pattern": "(\\d+)\\+? years(?: of)? experience", "suggestion": "state the capability needed rather than a duration", "simulate": true},
+        {"pattern": "must have (expert|deep|extensive)", "suggestion": "working knowledge of"},
+        {"pattern": "expert[- ]level|guru[- ]level", "suggestion": "proficient"},
+        {"pattern": "all of the following (are )?(required|mandatory)", "suggestion": "separate genuine must-haves from preferences"},
+        {"pattern": "non[- ]negotiable", "suggestion": "required"}
+      ]
+    }
+  },
+
+  "intern_role_markers": ["intern", "internship", "trainee", "junior", "entry level", "entry-level", "graduate", "fresher"],
+
+  "_intern_note": "When a role matches intern_role_markers AND states a multi-year experience threshold, that contradiction is escalated to critical severity — it is the single most common way an internship advert accidentally excludes its entire intended audience."
+}

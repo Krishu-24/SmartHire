@@ -1,0 +1,23 @@
+Aditya Kumar
+Delhi, India | aditya.kumar@email.com
+
+EDUCATION
+B.Tech Computer Science, 2021 - 2025
+
+EXPERIENCE
+Backend Engineering Intern, Paytm
+Mar 2025 - Sep 2025
+- Built Node.js microservices exposing REST APIs for the merchant settlement flow
+- Optimised PostgreSQL queries, cutting p95 latency from 840ms to 190ms
+- Wrote Express middleware for authentication and audit logging
+- Containerised services with Docker, deployed on AWS EKS
+- Participated in Agile ceremonies and code review
+
+PROJECTS
+QueueRunner - Distributed job queue
+- Node.js worker pool with Redis-backed queue
+- REST API for job submission and status polling
+
+SKILLS
+JavaScript, Node.js, Express, PostgreSQL, SQL, REST APIs, Redis, Git, Docker,
+AWS, Linux, Agile

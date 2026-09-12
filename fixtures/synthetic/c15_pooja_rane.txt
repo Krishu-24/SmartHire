@@ -1,0 +1,17 @@
+Pooja Rane
+Nagpur, India | pooja.rane@email.com
+
+EDUCATION
+B.E. Computer Science, 2021 - 2025
+
+EXPERIENCE
+Android Developer Intern, Practo
+Sep 2024 - May 2025
+- Built appointment booking screens in Kotlin using Jetpack Compose
+- Consumed REST APIs with Retrofit and handled offline caching with Room
+- Implemented Material Design components and responsive layouts
+- Git based workflow, code review through Bitbucket
+
+SKILLS
+Kotlin, Java, Android, Jetpack Compose, Retrofit, REST APIs, Room, SQLite,
+Git, Material Design

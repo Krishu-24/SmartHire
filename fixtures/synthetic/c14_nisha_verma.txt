@@ -1,0 +1,18 @@
+Nisha Verma
+Indore, India | nisha.verma@email.com
+
+EDUCATION
+M.Sc Data Science, 2023 - 2025
+
+EXPERIENCE
+Data Science Intern, Mu Sigma
+Jan 2025 - Jul 2025
+- Built churn prediction models in Python using scikit-learn and XGBoost
+- Cleaned and joined datasets with pandas across 14 source tables
+- Wrote SQL queries against Snowflake for feature extraction
+- Exposed one model behind a small Flask REST API for the product team
+- Presented findings to stakeholders in weekly reviews
+
+SKILLS
+Python, pandas, NumPy, scikit-learn, XGBoost, SQL, Snowflake, Flask,
+Matplotlib, Jupyter, Statistics

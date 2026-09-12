@@ -1,0 +1,28 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Model cache (re-downloaded by scripts/warm_models.py)
+.cache/
+*.safetensors
+
+# OS / editor
+.DS_Store
+.vscode/
+*.swp
+
+# Env / secrets
+.env
+.env.*
+*.local
+
+# Scratch
+/tmp/

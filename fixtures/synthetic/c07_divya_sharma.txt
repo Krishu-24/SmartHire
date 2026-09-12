@@ -1,0 +1,24 @@
+Divya Sharma
+Hyderabad, India | divya.sharma@email.com | linkedin.com/in/divyasharma
+
+EDUCATION
+B.Tech Information Technology, 2022 - 2026
+
+EXPERIENCE
+Full Stack Intern, Darwinbox
+Jun 2025 - Nov 2025
+- Shipped six features end to end across a React and Node.js codebase
+- Built REST APIs in Express backed by MongoDB, handling 50k daily requests
+- Migrated legacy class components to React hooks and TypeScript
+- Dockerised three services and wrote the GitHub Actions pipeline deploying them to AWS
+- Maintained Jest and React Testing Library suites
+
+PROJECTS
+MediTrack - Clinic management system
+- React frontend, Node.js and Express backend, MongoDB persistence
+- Role based access control, REST API, responsive HTML and CSS
+- Deployed with Docker Compose
+
+SKILLS
+JavaScript, TypeScript, React, Node.js, Express, MongoDB, PostgreSQL, REST APIs,
+Git, GitHub Actions, Docker, AWS, Jest, HTML, CSS, Agile

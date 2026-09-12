@@ -1,0 +1,24 @@
+Aarav Mehta
+Bangalore, India | aarav.mehta@email.com | github.com/aaravm
+
+EDUCATION
+B.Tech Computer Science, 2022 - 2026
+
+EXPERIENCE
+Software Engineering Intern, Flipkart Internal Tools
+Jun 2025 - Aug 2025
+- Built responsive dashboards in React and TypeScript consumed by 400+ internal users
+- Developed Node.js services exposing REST APIs for inventory reconciliation
+- Wrote MongoDB aggregation pipelines to power analytics views
+- Containerised the service with Docker and deployed to AWS ECS
+- Added Jest unit tests, raising coverage from 31% to 78%
+
+PROJECTS
+CampusHub - Full stack event platform
+- React frontend with server-side JavaScript backend on Node.js and Express
+- MongoDB for persistence, JWT authentication, REST API consumed by a mobile client
+- CI pipeline running Jest on every push, deployed via Docker
+
+SKILLS
+JavaScript, TypeScript, React, Node.js, Express, MongoDB, SQL, REST APIs,
+Git, Docker, AWS, Jest, HTML, CSS, Agile

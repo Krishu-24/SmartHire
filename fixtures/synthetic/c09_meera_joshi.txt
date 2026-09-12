@@ -1,0 +1,21 @@
+Meera Joshi
+Bangalore, India | meera.joshi@email.com | dribbble.com/meeraj
+
+EDUCATION
+B.Des Interaction Design, 2022 - 2026
+
+EXPERIENCE
+Frontend Developer Intern, Swiggy Design Systems
+Apr 2025 - Oct 2025
+- Built and documented 24 React components for the internal design system
+- Implemented responsive layouts in HTML and CSS across four breakpoints
+- Improved Lighthouse accessibility score from 71 to 96
+- Worked closely with designers in Figma to translate specs into JavaScript components
+- Used Git for version control with a trunk-based workflow
+
+PROJECTS
+Portfolio site
+- Static site in React with CSS animations and responsive grid layout
+
+SKILLS
+JavaScript, React, HTML, CSS, Sass, Figma, Git, Accessibility, Responsive Design

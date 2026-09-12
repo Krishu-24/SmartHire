@@ -1,0 +1,29 @@
+Priya Nair
+Pune, India | priya.nair@email.com
+
+EDUCATION
+B.E. Information Technology, 2022 - 2026
+
+EXPERIENCE
+Backend Developer Intern, Zeta Payments
+Jan 2025 - Jul 2025
+- Designed and shipped RESTful API endpoints serving 12k requests per day
+- Wrote server-side JavaScript using the Express framework and the Mongoose ODM
+- Modelled transaction collections in MongoDB with compound indexes for query performance
+- Implemented middleware for request validation, rate limiting and structured error handling
+- Collaborated in two-week Agile sprints with daily standups
+
+PROJECTS
+LedgerLite - Expense tracking web application
+- Single page interface built with React and hooks
+- Backend written in Express with route handlers exposing a REST API
+- MongoDB Atlas for storage, Mongoose schemas for validation
+- Session handling with JSON Web Tokens
+
+Bookmarks API
+- Server-side JavaScript runtime handling async I/O for a bookmarking service
+- Middleware chain for authentication, CORS and logging
+
+SKILLS
+JavaScript, React, Express, Mongoose, MongoDB, REST APIs, Git, HTML, CSS,
+Agile, Postman, JWT

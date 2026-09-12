@@ -1,0 +1,17 @@
+Siddharth Rao
+Coimbatore, India | siddharth.rao@email.com
+
+EDUCATION
+B.Tech Mechanical Engineering, 2021 - 2025
+
+EXPERIENCE
+Design Intern, Ashok Leyland
+Jun 2024 - Dec 2024
+- Created 3D assemblies in SolidWorks for chassis subcomponents
+- Ran finite element analysis in ANSYS to validate load tolerances
+- Prepared manufacturing drawings to GD&T standards
+- Coordinated with the production floor on tolerance issues
+
+SKILLS
+SolidWorks, ANSYS, AutoCAD, CATIA, GD&T, MATLAB, Thermodynamics,
+Manufacturing Processes

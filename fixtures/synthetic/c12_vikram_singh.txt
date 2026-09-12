@@ -1,0 +1,23 @@
+Vikram Singh
+Jaipur, India | vikram.singh@email.com
+
+EDUCATION
+B.Tech Computer Science, 2021 - 2025
+
+EXPERIENCE
+Backend Intern, Zomato
+Jun 2024 - Feb 2025
+- Built REST APIs in Django REST Framework for the restaurant partner portal
+- Designed PostgreSQL schemas and wrote migrations
+- Implemented Celery tasks for asynchronous report generation
+- Deployed with Docker and monitored through Grafana
+- Version control with Git, reviewed in GitLab merge requests
+
+PROJECTS
+FormFlow - Dynamic form builder
+- Django backend exposing a REST API
+- Server rendered HTML templates with CSS, light JavaScript for interactivity
+
+SKILLS
+Python, Django, REST APIs, PostgreSQL, SQL, Celery, Docker, Git, HTML, CSS,
+Linux, Agile

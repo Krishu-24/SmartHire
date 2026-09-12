@@ -1,0 +1,151 @@
+{
+  "generated_by": "scripts/make_synthetic_corpus.py",
+  "note": "Synthetic corpus with a known expected ranking. Replace with the real 18 resumes when they arrive; keep this as a regression fixture.",
+  "jd": "jd_technova.pdf",
+  "candidates": [
+    {
+      "id": "c01",
+      "name": "Aarav Mehta",
+      "file": "c01_aarav_mehta.pdf",
+      "expected_tier": "strong",
+      "probe": null,
+      "reason": "Textbook match \u2014 every required skill stated explicitly, plus most preferred."
+    },
+    {
+      "id": "c02",
+      "name": "Priya Nair",
+      "file": "c02_priya_nair.pdf",
+      "expected_tier": "strong",
+      "probe": "HIDDEN_GEM",
+      "reason": "Never writes 'Node.js' \u2014 says Express, Mongoose, server-side JavaScript. Semantic channel must find her; lexical channel will not."
+    },
+    {
+      "id": "c03",
+      "name": "Sneha Kulkarni",
+      "file": "c03_sneha_kulkarni.pdf",
+      "expected_tier": "medium",
+      "probe": "SURFACE_MATCH",
+      "reason": "Keyword dump with no supporting substance. Lexical channel will overrate her; semantic channel must not."
+    },
+    {
+      "id": "c04",
+      "name": "Ananya Iyer",
+      "file": "c04_ananya_iyer.pdf",
+      "expected_tier": "strong",
+      "probe": "TYPO_CASE",
+      "reason": "Misspellings and spacing variants throughout. Alias map + RapidFuzz must recover them."
+    },
+    {
+      "id": "c05",
+      "name": "Karthik Reddy",
+      "file": "c05_karthik_reddy.pdf",
+      "expected_tier": "medium",
+      "probe": "MESSY_FORMAT",
+      "reason": "No section headers, run-on prose, wildly inconsistent date formats. Parser must fall back to whole-document chunking without breaking."
+    },
+    {
+      "id": "c06",
+      "name": "Arjun Pillai",
+      "file": "c06_arjun_pillai.pdf",
+      "expected_tier": "weak",
+      "probe": "NEAR_EMPTY",
+      "reason": "~40 characters. Exercises the P5/P95 outlier defence \u2014 must not compress the pool."
+    },
+    {
+      "id": "c07",
+      "name": "Divya Sharma",
+      "file": "c07_divya_sharma.pdf",
+      "expected_tier": "strong",
+      "probe": null,
+      "reason": "Strong MERN with deployment depth."
+    },
+    {
+      "id": "c08",
+      "name": "Aditya Kumar",
+      "file": "c08_aditya_kumar.pdf",
+      "expected_tier": "medium",
+      "probe": null,
+      "reason": "Strong backend, no React at all. Tests that a partial-stack candidate ranks mid."
+    },
+    {
+      "id": "c09",
+      "name": "Meera Joshi",
+      "file": "c09_meera_joshi.pdf",
+      "expected_tier": "medium",
+      "probe": null,
+      "reason": "Frontend only, no backend. Mirror image of Aditya."
+    },
+    {
+      "id": "c10",
+      "name": "Ishita Ghosh",
+      "file": "c10_ishita_ghosh.pdf",
+      "expected_tier": "strong",
+      "probe": null,
+      "reason": "Strong modern stack, slightly thinner on database work."
+    },
+    {
+      "id": "c11",
+      "name": "Rohan Desai",
+      "file": "c11_rohan_desai.pdf",
+      "expected_tier": "medium",
+      "probe": null,
+      "reason": "React and SQL, no Node. Solid but incomplete."
+    },
+    {
+      "id": "c12",
+      "name": "Vikram Singh",
+      "file": "c12_vikram_singh.pdf",
+      "expected_tier": "medium",
+      "probe": null,
+      "reason": "Right shape of work, wrong stack \u2014 Python/Django instead of JS. Semantic channel should see the adjacency; lexical should not overrate."
+    },
+    {
+      "id": "c13",
+      "name": "Rahul Menon",
+      "file": "c13_rahul_menon.pdf",
+      "expected_tier": "medium",
+      "probe": null,
+      "reason": "Java backend. Adjacent but further from the JD than Vikram."
+    },
+    {
+      "id": "c14",
+      "name": "Nisha Verma",
+      "file": "c14_nisha_verma.pdf",
+      "expected_tier": "weak",
+      "probe": null,
+      "reason": "Data science with a little Flask. Mostly off-target."
+    },
+    {
+      "id": "c15",
+      "name": "Pooja Rane",
+      "file": "c15_pooja_rane.pdf",
+      "expected_tier": "weak",
+      "probe": null,
+      "reason": "Mobile developer. Some REST and Git overlap, little else."
+    },
+    {
+      "id": "c16",
+      "name": "Tanvi Bhatt",
+      "file": "c16_tanvi_bhatt.pdf",
+      "expected_tier": "weak",
+      "probe": null,
+      "reason": "Early student, basic frontend only."
+    },
+    {
+      "id": "c17",
+      "name": "Siddharth Rao",
+      "file": "c17_siddharth_rao.pdf",
+      "expected_tier": "weak",
+      "probe": null,
+      "reason": "Mechanical engineering. Near-zero overlap \u2014 anchors the bottom of the pool."
+    },
+    {
+      "id": "c18",
+      "name": "Manav Shah",
+      "file": "c18_manav_shah.pdf",
+      "expected_tier": "weak",
+      "probe": null,
+      "reason": "Business/marketing. Second anchor at the bottom."
+    }
+  ]
+}

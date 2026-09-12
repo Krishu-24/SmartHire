@@ -1,0 +1,19 @@
+Sneha Kulkarni
+Mumbai, India | sneha.k@email.com
+
+SKILLS
+JavaScript, React, Node.js, Express, MongoDB, SQL, REST APIs, Git, Docker, AWS,
+Kubernetes, GraphQL, TypeScript, Jest, HTML, CSS, Agile, CI/CD, Redis, Kafka,
+Microservices, Terraform, Jenkins, Webpack, Redux, Next.js, PostgreSQL
+
+EDUCATION
+B.Sc Computer Applications, 2022 - 2025
+
+EXPERIENCE
+Intern, Local Startup
+May 2024 - Jun 2024
+- Assisted the team
+- Attended meetings and learned about the software development lifecycle
+
+INTERESTS
+Technology, reading, cricket

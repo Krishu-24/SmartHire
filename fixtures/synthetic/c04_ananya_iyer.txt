@@ -1,0 +1,24 @@
+Ananya Iyer
+Chennai, India | ananya.iyer@email.com
+
+EDUCATION
+B.Tech Computer Science and Engineering, 2021 - 2025
+
+EXPERIENCE
+Full Stack Developer Intern, Freshworks
+Feb 2025 - Aug 2025
+- Built customer-facing screens in React.js with reusable component library
+- Developed backend services on Node JS exposing REST Api endpoints
+- Used Mongo DB for document storage and Postgres for relational reporting
+- Version control with git, pull request reviews, feature branch workflow
+- Wrote unit tests using the Jest framework
+
+PROJECTS
+StudySync - Collaborative notes application
+- Frontend in Reactjs with responsive HTML and CSS
+- Backend in Javscript running on Node JS with Express
+- Real time sync over websockets
+
+SKILLS
+Javscript, Typescript, React.js, Node JS, Express, Mongo DB, Postgres,
+REST Api, git, Docker, HTML, CSS, Jest

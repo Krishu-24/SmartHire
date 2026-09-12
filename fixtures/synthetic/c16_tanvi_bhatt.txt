@@ -1,0 +1,19 @@
+Tanvi Bhatt
+Surat, India | tanvi.bhatt@email.com
+
+EDUCATION
+B.Sc Computer Science, 2024 - 2027 (in progress)
+
+PROJECTS
+Personal portfolio website
+- Built with HTML and CSS, responsive on mobile and desktop
+- Small amount of JavaScript for a navigation menu toggle
+
+Recipe finder page
+- Static HTML page that filters a hardcoded list with JavaScript
+
+COURSEWORK
+Introduction to Programming, Data Structures, Web Technologies
+
+SKILLS
+HTML, CSS, basic JavaScript, Git (learning), Microsoft Office
