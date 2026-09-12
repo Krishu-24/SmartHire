@@ -9,13 +9,17 @@
 ```
 PDF (JD)  ──┐
             ├──▶ parser.extract()         PyMuPDF fast path, pdfplumber fallback
-PDF (×N)  ──┘         │
+PDF (×N)  ──┘         │                   + find_hidden(): invisible-text spans
                        ▼
               normalizer.repair_text()    NFKC, ligatures, hyphen-unwrap, bullets
                        │
+              blind.redact()              PII stripped BEFORE anything is matched
+                       │                  (resumes only — never the JD)
               parser.segment()            fuzzy section headers → {name: (start,end)}
                        │
               normalizer.chunk_text()     line/sentence chunks, EACH CARRYING A SPAN
+                       │
+              context.annotate()          per-chunk weight: section, shape, recency
                        │
          ┌─────────────┴──────────────┐
          ▼                             ▼
@@ -35,17 +39,42 @@ PDF (×N)  ──┘         │
           — this step runs ONCE per uploaded batch
                      │
                      ▼
+          assess.build(docs, skills, primitives, enrichment)
+          — integrity.py     unsupported claims, invisible text
+          — enrich.py        GitHub / LinkedIn evidence (off by default)
+          — verification.py  resume claims vs the candidate's own code
+          — collapses all three into one Adjustment per candidate
+                     │
+                     ▼
+          fusion.adjust(primitives, adjustments)
+          — the ONLY thing that mutates the matrix
+          — re-runs fusion.aggregate(), the single accumulation
+                     │
+                     ▼
           fusion.score(primitives, alpha, gate)
           — pure function of (primitives, alpha, gate)
           — this step runs on EVERY re-rank (cheap: ~40 flops/candidate)
                      │
-       ┌─────────────┼──────────────┬───────────────────┐
-       ▼             ▼               ▼                   ▼
-  explainer.py    chat.py       bias_detector.py     app.py / models.py
-  (reads cells)  (reads cells   (re-runs fusion.score  (shapes the JSON
-                  + routes      with skills removed —   contract, caches
-                  intent)       counterfactual)          the session)
+   ┌──────────┬──────┴───────┬───────────┬────────────┬──────────────┐
+   ▼          ▼              ▼           ▼            ▼              ▼
+explainer  chat.py    bias_detector  rampup.py   interview.py   feedback.py
+(reads    (reads      (re-runs       (taxonomy   (gaps, claims  (re-ranks the
+ cells)    cells +     fusion.score   bridge      and repos      pool once per
+           routes      with skills    cost per    → questions)   gap — its own
+           intent)     removed)       gap)                       endpoint)
 ```
+
+**Order is load-bearing.** `assess.build()` runs integrity *before*
+verification, because verification asks the resume whether it stands behind a
+claim before it is willing to call that claim contradicted — without that gate a
+genuine internship achievement reads as a lie, since an employer's repository is
+private and always will be.
+
+**Parity survives all of it.** Only `fusion.score()` is mirrored in
+`rescore.js`; every judgement pass above runs server-side and alpha-independent,
+so `scripts/check_parity.py` still proves agreement to 1e-9 at every alpha. The
+one exception is the whole-candidate `doc_multiplier`, which is applied inside
+`score()` and therefore mirrored in JavaScript too.
 
 **The one rule that makes the whole system explainable:** parsing and
 embedding happen exactly once per uploaded batch
@@ -232,6 +261,20 @@ re-embedding, pure arithmetic. This one function is what makes the bias
 detector's counterfactual simulation (`bias_detector.simulate_skill_impact`)
 cost almost nothing: "what if this requirement didn't exist?" is answered by
 re-running `fusion.score()` on a filtered view of data already in memory.
+
+---
+
+## Layer 4.5 — Judgement: `context.py`, `integrity.py`, `enrich.py`, `verification.py`, `assess.py`
+
+These decide what a piece of evidence is *worth*, as multipliers on lexical
+evidence. They are documented feature by feature, with the decisions and the
+bugs that shaped them, in **[FEATURES.md](FEATURES.md)** — including why status
+never moves when a claim is discounted, why a contradiction needs three gates
+and a corroboration needs one, and why LinkedIn is capped at 0.35.
+
+The ontology they share (`taxonomy.py`, `data/taxonomy.json`) is what makes a
+semantic credit inspectable: 42 concepts, 89 skills, and a lowest common ancestor
+for any pair.
 
 ---
 

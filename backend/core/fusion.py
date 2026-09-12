@@ -42,21 +42,65 @@ CONSENSUS = "CONSENSUS"
 
 @dataclass(slots=True)
 class SkillCell:
-    """One cell of the evidence matrix. Drives score, explanation and UI alike."""
+    """One cell of the evidence matrix. Drives score, explanation and UI alike.
+
+    `lex` is what the text literally says and never moves — it is a fact about the
+    document, and `status` is derived from it, so a skill the resume states is
+    always reported as stated. `lex_eff` is what that claim is WORTH once its
+    placement, support and external corroboration are priced in, and it is what
+    reaches the score. Keeping both is what lets the UI say "stated, but
+    discounted to 41%, and here is why" instead of silently moving a number.
+    """
     skill_id: str
     label: str
     tier: str
     weight: float
     cluster: str
-    lex: float
+    lex: float              # raw literal evidence: 0.0 | 0.8 fuzzy | 1.0 exact
     lex_kind: str
     sem_raw: float
     sem_cal: float          # g(sem_raw)
-    coverage: float         # max(lex, sem_cal)
-    status: str
+    coverage: float         # max(lex_eff, sem_cal)
+    status: str             # from raw lex: a stated skill is always MATCHED
     evidence: str = ""      # the resume sentence supporting this
     start: int = -1         # char span into the candidate's display text
     end: int = -1
+
+    # --- what the claim is worth ---
+    lex_eff: float = 0.0            # lex * every multiplier below
+    section: str = "UNKNOWN"        # where the lexical match was found
+    context_weight: float = 1.0     # recency and depth
+    context_reason: str = ""
+    integrity_mult: float = 1.0     # unsupported-claim discount
+    external_mult: float = 1.0      # GitHub / LinkedIn corroboration or contradiction
+    external_verdict: str = ""      # CORROBORATED | CONTRADICTED | UNVERIFIABLE | UNVERIFIED
+    external_evidence: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+
+    @property
+    def discounted(self) -> bool:
+        return self.lex > 0.0 and self.lex_eff < self.lex - 1e-9
+
+    @property
+    def boosted(self) -> bool:
+        return self.lex_eff > self.lex + 1e-9
+
+
+@dataclass(slots=True)
+class Adjustment:
+    """Multipliers applied to one candidate's evidence after the matrix is built.
+
+    Deliberately a plain data carrier. Integrity, verification and enrichment all
+    need to change what evidence is worth, and every one of them needs the built
+    matrix to decide — so they hand their conclusions back through this rather
+    than fusion importing three modules that already import fusion.
+    """
+    doc_multiplier: float = 1.0                                      # whole candidate
+    skill_multipliers: dict[str, float] = field(default_factory=dict)
+    skill_notes: dict[str, list[str]] = field(default_factory=dict)
+    skill_verdicts: dict[str, str] = field(default_factory=dict)
+    skill_evidence: dict[str, list[str]] = field(default_factory=dict)
+    integrity_multipliers: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -81,6 +125,21 @@ class Primitives:
     warnings: list[str] = field(default_factory=list)
     cells: list[SkillCell] = field(default_factory=list)
 
+    # Whole-candidate multiplier, currently only the invisible-text penalty.
+    # Lives here rather than inside score() because it is alpha-independent, and
+    # it is applied in score() so the browser mirror can reproduce it exactly.
+    doc_multiplier: float = 1.0
+
+    # Lexical coverage BEFORE any discount — what the resume claims, as opposed to
+    # what those claims are worth. The surface-match flag has to read this one:
+    # that flag exists to say "names the skills, shows no work", and if it read
+    # the discounted figure it would go quiet on exactly the candidate it is for,
+    # because the discount has already absorbed the gap it looks for.
+    lex_cov_raw: float = 0.0
+    context_discount: float = 1.0   # mean lex_eff/lex over stated skills, for display
+    external_proven: int = 0
+    external_contradicted: int = 0
+
 
 @dataclass(slots=True)
 class Candidate:
@@ -99,6 +158,7 @@ class Candidate:
     rrf: float
     flag: str
     primitives: Primitives
+    rank_rrf: int = 0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -166,49 +226,107 @@ def prepare(subs: list[SubScores], skills: list[Skill]) -> list[Primitives]:
     out: list[Primitives] = []
     for i, sub in enumerate(subs):
         cells: list[SkillCell] = []
-        lex_acc = sem_acc = req_acc = inferred_acc = 0.0
 
         for skill in skills:
             ev = sub.evidence.get(skill.id)
             lex = ev.lex if ev else 0.0
             sem_raw = ev.sem_raw if ev else 0.0
             sem_cal = calibrate(sem_raw)
-            coverage = max(lex, sem_cal)
 
+            # Status reads RAW lexical evidence. Whether the resume says a word is
+            # a fact about the document; how much that saying is worth is priced
+            # separately, in lex_eff. Collapsing the two would let a discount turn
+            # a stated skill into a "missing" one, which is not true and reads as
+            # a bug to anyone who can see the resume.
             status = classify(lex, sem_cal)
-
-            lex_acc += skill.weight * lex
-            sem_acc += skill.weight * sem_cal
-            if skill.tier == REQUIRED:
-                req_acc += skill.weight * coverage
-                if status == INFERRED:
-                    inferred_acc += skill.weight
+            context_w = ev.context_weight if ev else 1.0
+            lex_eff = lex * context_w
 
             cells.append(SkillCell(
                 skill_id=skill.id, label=skill.label, tier=skill.tier,
                 weight=skill.weight, cluster=skill.cluster,
                 lex=lex, lex_kind=ev.lex_kind if ev else "none",
                 sem_raw=sem_raw, sem_cal=sem_cal,
-                coverage=coverage, status=status,
+                coverage=max(lex_eff, sem_cal), status=status,
                 evidence=ev.chunk_text if ev else "",
                 start=ev.chunk_start if ev else -1,
                 end=ev.chunk_end if ev else -1,
+                lex_eff=lex_eff,
+                section=ev.section if ev else "UNKNOWN",
+                context_weight=context_w,
+                context_reason=ev.context_reason if ev else "",
             ))
 
-        req_coverage = req_acc / req_w
-        out.append(Primitives(
+        p = Primitives(
             doc_id=sub.doc_id, name=sub.name, filename=sub.filename,
             bm25_raw=sub.bm25_raw, bm25_norm=float(bm25_norm[i]),
             docsim_raw=sub.docsim_raw, docsim_norm=float(docsim_norm[i]),
-            lex_cov=lex_acc / total_w,
-            sem_cov=sem_acc / total_w,
-            req_coverage=req_coverage,
-            gap_density=1.0 - req_coverage,
-            inferred_req_ratio=inferred_acc / req_w,
+            lex_cov=0.0, sem_cov=0.0, req_coverage=0.0,
+            gap_density=0.0, inferred_req_ratio=0.0,
             quality=sub.quality, n_chunks=sub.n_chunks, warnings=list(sub.warnings),
             cells=cells,
-        ))
+        )
+        aggregate(p)
+        out.append(p)
     return out
+
+
+def aggregate(p: Primitives) -> None:
+    """Recompute every roll-up from the cells, in place.
+
+    Called once by prepare() and again by adjust(). Having exactly one
+    implementation of the accumulation is the point: the alternative is two
+    copies that drift, and a coverage number that disagrees with the cells the UI
+    is showing underneath it.
+    """
+    total_w = sum(c.weight for c in p.cells) or 1.0
+    req_cells = [c for c in p.cells if c.tier == REQUIRED]
+    req_w = sum(c.weight for c in req_cells) or 1.0
+
+    p.lex_cov = sum(c.weight * c.lex_eff for c in p.cells) / total_w
+    p.lex_cov_raw = sum(c.weight * c.lex for c in p.cells) / total_w
+    p.sem_cov = sum(c.weight * c.sem_cal for c in p.cells) / total_w
+    p.req_coverage = sum(c.weight * c.coverage for c in req_cells) / req_w
+    p.gap_density = 1.0 - p.req_coverage
+    p.inferred_req_ratio = sum(
+        c.weight for c in req_cells if c.status == INFERRED) / req_w
+
+    stated = [c for c in p.cells if c.lex > 0.0]
+    p.context_discount = round(
+        sum(c.lex_eff / c.lex for c in stated) / len(stated), 4) if stated else 1.0
+    p.external_proven = sum(1 for c in p.cells if c.external_verdict == "CORROBORATED")
+    p.external_contradicted = sum(1 for c in p.cells if c.external_verdict == "CONTRADICTED")
+
+
+def adjust(primitives: list[Primitives], adjustments: dict[str, Adjustment]) -> None:
+    """Apply integrity and external-evidence multipliers to a built matrix, in place.
+
+    Runs after prepare() because every source of these multipliers needs the
+    matrix to reach its conclusion — verification asks "which skills does this
+    resume claim", and that question only has an answer once the cells exist.
+    """
+    for p in primitives:
+        adj = adjustments.get(p.doc_id)
+        if adj is None:
+            continue
+
+        p.doc_multiplier = adj.doc_multiplier
+
+        for cell in p.cells:
+            cell.integrity_mult = adj.integrity_multipliers.get(cell.skill_id, 1.0)
+            cell.external_mult = adj.skill_multipliers.get(cell.skill_id, 1.0)
+            cell.external_verdict = adj.skill_verdicts.get(cell.skill_id, "")
+            cell.external_evidence = list(adj.skill_evidence.get(cell.skill_id, []))
+            cell.notes = list(adj.skill_notes.get(cell.skill_id, []))
+
+            # Corroboration can push a claim above its literal value — that is the
+            # point of a receipt — but never beyond a full exact match, so a
+            # GitHub link can strengthen evidence and never manufacture it.
+            raw = cell.lex * cell.context_weight * cell.integrity_mult * cell.external_mult
+            cell.lex_eff = min(raw, config.LEX_EXACT_SCORE)
+            cell.coverage = max(cell.lex_eff, cell.sem_cal)
+
+        aggregate(p)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -257,10 +375,24 @@ def score(
     ks = [channel_k(p) for p in primitives]
     ms = [channel_m(p) for p in primitives]
     gates = [gate_multiplier(p, gate) for p in primitives]
-    finals = [100.0 * (alpha * k + (1.0 - alpha) * m) * g for k, m, g in zip(ks, ms, gates)]
+    finals = [
+        100.0 * (alpha * k + (1.0 - alpha) * m) * g * p.doc_multiplier
+        for k, m, g, p in zip(ks, ms, gates, primitives)
+    ]
 
     rank_lex = _ranks(ks)
     rank_sem = _ranks(ms)
+
+    # Reciprocal Rank Fusion over the two channel rankings. Reported alongside the
+    # blended score rather than replacing it: RRF answers "where do the two
+    # retrievers agree this candidate belongs" using only rank, which makes it
+    # immune to the two channels having different score distributions — and blind
+    # to how far apart the candidates actually are. The recruiter needs both.
+    rrfs = [
+        1.0 / (config.RRF_K + rank_lex[i]) + 1.0 / (config.RRF_K + rank_sem[i])
+        for i in range(len(primitives))
+    ]
+    rank_rrf = _ranks(rrfs)
 
     cands: list[Candidate] = []
     for i, p in enumerate(primitives):
@@ -270,8 +402,8 @@ def score(
             score=round(finals[i], 2), rank=0,
             k_score=round(ks[i], 4), m_score=round(ms[i], 4), gate=round(gates[i], 4),
             rank_lexical=rank_lex[i], rank_semantic=rank_sem[i], rank_delta=delta,
-            rrf=round(1.0 / (config.RRF_K + rank_lex[i]) + 1.0 / (config.RRF_K + rank_sem[i]), 6),
-            flag=_flag(delta, p.inferred_req_ratio, p.lex_cov - p.sem_cov, p.req_coverage),
+            rrf=round(rrfs[i], 6), rank_rrf=rank_rrf[i],
+            flag=_flag(delta, p.inferred_req_ratio, p.lex_cov_raw - p.sem_cov, p.req_coverage),
             primitives=p,
         ))
 
@@ -332,26 +464,20 @@ def without_skills(primitives: list[Primitives], drop: set[str]) -> list[Primiti
     out: list[Primitives] = []
     for p in primitives:
         kept = [c for c in p.cells if c.skill_id not in drop]
-        total_w = sum(c.weight for c in kept) or 1.0
-        req_cells = [c for c in kept if c.tier == REQUIRED]
-        req_w = sum(c.weight for c in req_cells) or 1.0
 
-        req_acc = sum(c.weight * c.coverage for c in req_cells)
-        inferred_acc = sum(c.weight for c in req_cells if c.status == INFERRED)
-        req_coverage = req_acc / req_w
-
-        out.append(Primitives(
+        trimmed = Primitives(
             doc_id=p.doc_id, name=p.name, filename=p.filename,
             bm25_raw=p.bm25_raw, bm25_norm=p.bm25_norm,
             docsim_raw=p.docsim_raw, docsim_norm=p.docsim_norm,
-            lex_cov=sum(c.weight * c.lex for c in kept) / total_w,
-            sem_cov=sum(c.weight * c.sem_cal for c in kept) / total_w,
-            req_coverage=req_coverage,
-            gap_density=1.0 - req_coverage,
-            inferred_req_ratio=inferred_acc / req_w,
+            lex_cov=0.0, sem_cov=0.0, req_coverage=0.0,
+            gap_density=0.0, inferred_req_ratio=0.0,
             quality=p.quality, n_chunks=p.n_chunks, warnings=list(p.warnings),
-            cells=kept,
-        ))
+            cells=kept, doc_multiplier=p.doc_multiplier,
+        )
+        # Same accumulation as the real pool, so a simulated re-rank is comparable
+        # with the ranking it is being contrasted against.
+        aggregate(trimmed)
+        out.append(trimmed)
     return out
 
 

@@ -1,234 +1,181 @@
 # Team Reference: Frontend Architecture & UI Component Map
 
-*For whoever is styling, extending, or debugging the UI.*
+React 19 + Vite, plain CSS, no component library. `framer-motion` is used for
+exactly one thing: animating candidate rows as they reorder under the weight
+slider, because seeing a candidate move is the point of the slider.
 
-> **A note on file layout before you go looking for files by these names.**
-> The components below are documented individually because each has a distinct
-> job, but they are not all one-file-per-component on disk. Several small,
-> tightly related presentational pieces are grouped into two files
-> (`Charts.jsx`, `Panels.jsx`) because they share imports and are always
-> touched together; the larger, independently-owned pieces (`EvidenceDrawer`)
-> get their own file. Every heading below states its real source file. If your
-> team prefers strict one-file-per-component as you divide up styling work,
-> splitting these further is a pure mechanical move — nothing in this doc
-> depends on the current grouping.
+---
+
+## Design language
+
+Warm-neutral paper, ink typography, one restrained accent. Colour is spent on
+one thing only — the four evidence states a recruiter learns once — so when
+something *is* coloured it means something.
+
+| Token group | Purpose |
+|---|---|
+| `--paper`, `--surface`, `--surface-2/3` | Ground and panel fills |
+| `--ink` … `--ink-4` | Type, four levels of emphasis |
+| `--accent` | The interactive spine only: slider, focus, active tab |
+| `--matched` / `--inferred` / `--weak` / `--missing` | The evidence legend |
+
+**The four status colours are semantic, not decorative.** Green = MATCHED,
+blue = INFERRED, amber = WEAK, red = MISSING, used identically on rows, chips,
+the evidence bar, the matrix and the ontology paths. Changing one changes the
+whole application's legend.
+
+Light is the default. `[data-theme="dark"]` swaps the same token names, and the
+OS preference is followed until the user picks a side. Every colour has its
+definition on bare `:root` first, so no token exists only inside a media query.
+
+> `html` carries the background, not `body`. A body background is propagated to
+> the viewport canvas, and that propagated value does not repaint reliably when
+> the custom property behind it changes on theme switch.
 
 ---
 
 ## Directory layout
 
 ```
-frontend/
-├── index.html
-├── vite.config.js          proxies /api -> http://127.0.0.1:8000 in dev
-└── src/
-    ├── main.jsx            React root
-    ├── index.css           the ENTIRE design system — see note below
-    ├── App.jsx             app shell, data fetching, state, the ranked board
-    ├── lib/
-    │   └── rescore.js      client-side mirror of backend/core/fusion.py::score()
-    └── components/
-        ├── Charts.jsx         ScoreRadar, GapScatter, ContribBar, StatusBar
-        ├── EvidenceDrawer.jsx the slide-out candidate panel
-        └── Panels.jsx         WeightRail, InsightPanel, BiasPanel, ChatDock,
-                                DiffPanel, LoadingBoard
+src/
+  index.css              tokens, reset, shared atoms — retheme from here
+  App.css                layout and components
+  App.jsx                shell: state, tabs, the two toggles
+  lib/
+    rescore.js           client-side mirror of fusion.score()
+    ui.js                theme hook, formatting, the status vocabulary
+  components/
+    Board.jsx            the ranked rows
+    Detail.jsx           the per-candidate inspector (5 views) + <Path>
+    Views.jsx            whole-pool views (4)
 ```
-
-**`index.css` is the design system.** Every color, radius, easing curve and
-font is a CSS custom property declared once at the top of the file (`:root`).
-There is no Tailwind and no CSS-in-JS — retheming the entire app means editing
-that token block, not hunting through components. The four status colors
-(`--matched`, `--inferred`, `--weak`, `--missing`) are used identically across
-cards, chips, the radar, the scatter, and the diff view; changing one changes
-the app's entire visual legend, so treat them as load-bearing, not decorative.
-
-**State lives in `App.jsx`, not in a store.** There's no Redux/Zustand/Context
-— the app has one screen and one shared dataset (`payload`), so `useState` in
-the top-level component plus prop-drilling is simpler and has fewer moving
-parts than a state library would be. If the app grows a second screen, that's
-the point at which to reconsider.
 
 ---
 
-## `App.jsx` — shell, data flow, and the ranked board
+## `App.jsx` — shell and data flow
 
-Holds all top-level state:
+Two pieces of state behave differently **on purpose**:
 
-| State | Purpose |
-|---|---|
-| `payload` | the full response from `/api/analyze` (or `null` before first load) |
-| `loading` / `error` | request lifecycle |
-| `alpha` / `gate` | the two ranking controls; **owned here**, passed down |
-| `selected` | the candidate whose drawer is open (or `null`) |
-| `compare` | up to two `doc_id`s selected for the diff panel |
+**`alpha` never touches the network.** The backend ships every alpha-independent
+sub-score, so dragging the weight slider re-ranks in the browser through
+`rescore.js`. `scripts/check_parity.py` proves that arithmetic matches
+`fusion.py` to 1e-9 at every alpha.
 
-**The ranking itself is computed here**, not fetched:
+**`blind` does round-trip, and cannot change a score.** Identity is stripped at
+parse time and never reaches the engine, so the server only re-renders which
+name goes on a row and re-masks the resume text. That is the whole claim, and
+the reason it is safe to flip mid-demo: the numbers do not move.
 
-```js
-const candidates = useMemo(
-  () => rescore(payload.candidates, alpha, gate, payload.meta),
-  [payload, alpha, gate],
-)
-```
-
-This is the entire reason the α slider is instant — moving it changes `alpha`,
-React recomputes `candidates` locally via `rescore()` (see below), and nothing
-touches the network. The backend's `/api/analyze` response already carries
-every alpha-independent sub-score needed to do this.
-
-**The ranked board is rendered inline here**, not as a separate
-`CandidateBoard` component — each card is a `motion.article` from Framer
-Motion with `layoutId={c.doc_id}`. When `candidates` re-sorts after an `alpha`
-change, Framer Motion's FLIP animation (`layout` prop + a spring transition)
-animates each card smoothly to its new position rather than snapping. A card
-shows: rank, name, a `StatusBar` mini-bar (from `Charts.jsx`), a flag badge if
-applicable, required-skill coverage %, a parse-quality warning if under 0.5,
-a "compare" toggle button, and the score with its K/M sub-scores.
-
-Two entry points load data: `loadSample()` (POSTs to
-`/api/analyze/sample`, which the backend resolves against `data/` if the real
-corpus is present, else the synthetic fixtures) and `upload(files)` (builds a
-`FormData`, guesses which uploaded file is the JD by filename, POSTs to
-`/api/analyze`).
+Five top-level tabs: Shortlist, Fusion inspector, Skill ontology, JD audit,
+Candidate feedback. Selecting a candidate opens the right-hand inspector; on
+narrow viewports the inspector replaces the control rail rather than squeezing it.
 
 ---
 
 ## `lib/rescore.js` — the client-side scoring engine
 
-This file's only job is to compute **exactly** what
-`backend/core/fusion.py::score()` computes, in JavaScript, so the ranking never
-needs a round trip.
+Mirrors `backend/core/fusion.py::score()` line for line.
 
 ```js
-export function channelK(p, meta)        // mirrors fusion.channel_k()
-export function channelM(p, meta)        // mirrors fusion.channel_m()
-export function gateMultiplier(p, on, meta)  // mirrors fusion.gate_multiplier()
-export function rescore(candidates, alpha, gate, meta)  // mirrors fusion.score()
-export function poolStats(candidates)    // spread/min/max/mean for the top bar
+score = 100 × (α·K + (1−α)·M) × gate × doc_multiplier
 ```
 
-`meta` (from the API payload) carries the engine's own tuning weights
-(`k_weight_bm25`, `m_weight_docsim`, `gate_floor`, `gate_span`) rather than
-hard-coding them here — if `backend/config.py` changes those values, the
-frontend picks them up automatically on the next analysis with **zero code
-changes**, because the formula shape (not the constants) is what's mirrored.
+`doc_multiplier` is the whole-candidate integrity penalty (today: invisible
+text). It is computed server-side and alpha-independent, but it **must** be
+applied here too — if the browser skipped it, the slider would quietly hand a
+penalised candidate their points back.
 
-The one subtlety: `round()` at the bottom re-implements Python's
-banker's-rounding behavior (round-half-to-even) instead of JavaScript's
-default round-half-away-from-zero, specifically so the two languages can't
-disagree on an exact `.5` boundary. `scripts/check_parity.py` runs this file
-under Node and diffs its output against the real Python engine at
-α ∈ {0, 0.25, 0.5, 0.75, 1} — the check requires agreement to **1e-9**, and
-currently passes with **zero** measured difference at every value.
+Python's `round()` is banker's rounding and JS `toFixed` is half-away-from-zero;
+`round()` here matches Python explicitly so the parity test checks the formula
+rather than a rounding accident.
 
-**If you ever change the scoring formula, change it in both files, in the same
-commit.** Nothing will error if you don't — the UI will just silently disagree
-with the backend. Run `check_parity.py` after any change to either file.
+> **Contract:** this file and `fusion.py` must produce identical numbers. If you
+> change one, change the other, and run `scripts/check_parity.py`.
+
+Flags (`HIDDEN_GEM`, `SURFACE_MATCH`) derive from K and M, both
+alpha-independent, so they never change as the slider moves and are carried
+straight through from the payload.
 
 ---
 
-## `components/Charts.jsx` — hand-drawn SVG, no charting library
+## `lib/ui.js`
 
-> **Deviation from the original design brief, noted honestly:** the Phase 1
-> plan called for a Recharts-based scatter plot. The shipped implementation
-> uses plain inline SVG instead — no charting dependency was added. This keeps
-> every chart color pinned to the same CSS theme tokens as the rest of the app
-> (a library would fight that), keeps the bundle smaller, and made the
-> dashed-guideline / click-to-select interactions on the scatter plot trivial
-> to hand-tune. If the team wants Recharts' richer interaction set later
-> (tooltips, zoom, legends), that's a drop-in replacement for this file only —
-> nothing else in the app depends on how these are drawn internally.
+The status vocabulary lives here and nowhere else — `STATUS_LABEL`,
+`STATUS_HELP`, `cls()`. That single definition is what stops the rows, the
+matrix, the chips and the ontology view from slowly disagreeing about what amber
+means.
 
-### `ScoreRadar({ candidate, size = 250 })`
-Groups the candidate's skill cells by `cluster` (Frontend/Backend/Database/…),
-computes a weighted coverage value per cluster, and draws a radar polygon.
-Returns `null` if there are fewer than 3 clusters (a radar needs at least a
-triangle to be legible).
-
-### `GapScatter({ candidates, selectedId, onSelect, width, height })`
-One `<circle>` per candidate: x = score, y = `primitives.gap_density`, color =
-flag class, radius scaled by evidence volume (`n_chunks`), selected candidate
-gets a larger stroked circle. `onSelect(candidate)` fires on click — wired to
-`setSelected` in `App.jsx` so clicking a point opens that candidate's drawer.
-
-### `ContribBar({ candidate, alpha })`
-The two-segment bar in the evidence drawer showing `alpha * k_score` versus
-`(1-alpha) * m_score` as proportional widths, with the percentage printed
-inside each segment once it's wide enough to hold text.
-
-### `StatusBar({ candidate })`
-The thin mini-bar under each card's name — proportional segments for
-MATCHED/INFERRED/WEAK/MISSING weight, using the same four status colors as
-everywhere else.
+`useTheme()` writes `data-theme` onto `document.documentElement` and persists to
+`localStorage`, wrapped in try/catch — a private window or blocked site data
+must not take the app down, and the theme still applies for the session.
 
 ---
 
-## `components/EvidenceDrawer.jsx`
+## `components/Board.jsx`
 
-**Props:** `candidate` (or `null` to render nothing), `alpha`, `poolSize`,
-`onClose`.
+One row per candidate: rank, name, flag chips, the evidence bar, score.
 
-The single most detail-dense component in the app. Its job is turning the
-evidence matrix for one candidate into something a recruiter can *check*, not
-just read:
+**`EvidenceBar`** is the component that earns its place. Two candidates on 71
+points can be completely different people; the proportional split across the four
+states shows that at a glance without opening anything.
 
-- Builds the resume display by walking `candidate.resume_text` and splicing in
-  `<mark>` tags at every skill cell's `[start, end)` character span, merging
-  overlapping spans (several skills often cite the same sentence).
-- Every skill chip is a `<button>`; clicking one calls `jumpTo(skillId)`,
-  which sets an `active` skill id (triggering a CSS pulse animation on the
-  matching `<mark>`) and calls `scrollIntoView` on it. Chips with no evidence
-  span (`start < 0`) render `disabled` — they can't lie about having a
-  citation.
-- Escape key and a click on the scrim both close it (`onClose`), handled via a
-  `keydown` listener in a `useEffect`.
-- Renders `ScoreRadar` and `ContribBar` from `Charts.jsx` inline.
-
-Framer Motion's `AnimatePresence` handles the slide-in/slide-out and the scrim
-fade; the drawer itself is a plain `motion.aside` with a spring transition.
+Flag chips are generated from evidence, not decoration — hidden gem, surface
+match, invisible text, unsupported claims, *n* proven by code, *n* unbacked, and
+a parse-quality warning below 0.5. Each carries a `title` explaining itself.
 
 ---
 
-## `components/Panels.jsx`
+## `components/Detail.jsx`
 
-### `WeightRail({ alpha, setAlpha, gate, setGate, meta, skills })`
-The left-rail control panel: the α `<input type="range">` (inverted internally
-so the visual left side means "keyword" — see the source comment), the
-must-have gate toggle, the job's required/preferred skill chip lists, and an
-"Engine" info block (semantic backend name, device, pool size, elapsed time,
-τ calibration band). This is the component your Member 1 (frontend/UX) will
-touch most when polishing the primary interaction of the demo.
+The per-candidate inspector, five sub-views:
 
-### `InsightPanel({ candidates, selected, onSelect, bias, meta })`
-Composes the right column: renders `GapScatter`, a list of flagged
-Hidden-Gem/Surface-Match candidates as clickable summary cards, and the
-`BiasPanel`. Purely a layout/composition component — no scoring logic lives
-here.
+| View | Shows |
+|---|---|
+| Evidence | The matrix, per skill, expandable to the sentence behind each cell |
+| Ramp-up | Gaps priced in weeks, with the springboard and the ontological path |
+| Interview | Questions targeting exactly those gaps and claims |
+| Integrity | Unsupported claims, invisible text, resume-versus-code, redactions |
+| Code | Repositories, what they prove, and README-only claims |
 
-### `BiasPanel({ bias })`
-Renders the JD's inclusivity score (color-coded: ≥70 green, ≥40 amber, else
-red), a one-line summary, and a collapsible list of findings, each showing
-severity, the flagged text, the reason, the measured impact (when the finding
-came from the counterfactual simulation rather than the lexicon scan), and a
-suggested fix.
+**The rule this file follows:** a number representing a judgement is never shown
+without the reason beside it. The matrix has two numeric columns — **Said**
+(`lex`, struck through when discounted) and **Counted** (`coverage`) — and
+expanding a row explains the gap between them: the placement multiplier, the
+support multiplier, the code multiplier, and the sentence they were derived from.
 
-### `ChatDock({ candidates, alpha, gate })`
-A minimal chat UI: message log, an input, and suggested-question chips shown
-before the first message. POSTs to `/api/chat?alpha=…&gate=…` with
-`{ query }` and renders `{ intent, answer }` from the response. Holds its own
-local `log` state — chat history is not persisted anywhere and resets on
-reload, which is fine for a live demo.
+Also exports **`<Path>`**, the `A → B → C` ontology renderer, reused by `Views.jsx`.
 
-### `DiffPanel({ a, b, onClose })`
-Renders above the board when two candidates are selected via the "compare"
-button on their cards. Shows the score/K/M delta as a sentence, then every
-skill both candidates have as a row of two status dots, dimming any skill both
-share so the eye goes straight to what's genuinely different between them.
+---
 
-### `LoadingBoard()`
-The skeleton state shown while `/api/analyze` is in flight. Cycles through a
-fixed list of stage labels ("Parsing PDFs" → "Extracting job requirements" →
-… ) on a timer purely for perceived-progress purposes — it does not reflect
-real backend progress (the backend has no progress-streaming endpoint), and
-should not be read as one. It exists so an 8–12 second wait feels engineered
-rather than stalled.
+## `components/Views.jsx`
+
+**`FusionInspector`** — both channel rankings, the RRF score, the RRF rank and
+its disagreement with the blended rank, one row per candidate.
+
+**`TaxonomyExplorer`** — pick two skills, see each one's path, how they relate,
+where they meet and what the walk costs. Below it, every non-identical match the
+engine actually made in this pool, with the cosine and the resume sentence that
+triggered it.
+
+> The relation is *derived* at render (`pairing`) rather than cleared in an
+> effect, so a stale relation from the previous pair cannot flash while the new
+> one is in flight.
+
+**`JobAudit`** — the bias report with measured impact per finding, then every
+requirement the engine read out of the JD with the line it came from.
+
+**`FeedbackView`** — fetched on demand (it is the expensive one), expandable per
+candidate, with the draft rejection note and a copy button.
+
+---
+
+## Conventions
+
+- **Panels are plain rectangles on paper with a hairline.** No glass, no glow, no
+  shadow except on the two elements that genuinely float. A recruiter is reading
+  dense evidence and decoration competes with it.
+- **Tables scroll inside `.tablewrap`**, never the page body.
+- **Every interactive row is a `<button>`** with `aria-expanded` or
+  `aria-selected`, so the board is keyboard-navigable without extra handlers.
+- **No inline colours.** Everything resolves through a token so both themes stay
+  correct for free.

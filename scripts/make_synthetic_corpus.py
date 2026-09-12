@@ -17,6 +17,9 @@ import json
 import pathlib
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import _console  # noqa: F401  (configures stdout encoding on import)
+
 try:
     import pymupdf as fitz
 except ImportError:  # pragma: no cover - older PyMuPDF
@@ -108,7 +111,7 @@ Git, Docker, AWS, Jest, HTML, CSS, Agile
         "reason": "Never writes 'Node.js' — says Express, Mongoose, server-side JavaScript. "
                   "Semantic channel must find her; lexical channel will not.",
         "text": """Priya Nair
-Pune, India | priya.nair@email.com
+Pune, India | priya.nair@email.com | github.com/priyanair-dev
 
 EDUCATION
 B.E. Information Technology, 2022 - 2026
@@ -143,7 +146,7 @@ Agile, Postman, JWT
         "reason": "Keyword dump with no supporting substance. Lexical channel will overrate her; "
                   "semantic channel must not.",
         "text": """Sneha Kulkarni
-Mumbai, India | sneha.k@email.com
+Mumbai, India | sneha.k@email.com | github.com/snehak
 
 SKILLS
 JavaScript, React, Node.js, Express, MongoDB, SQL, REST APIs, Git, Docker, AWS,
@@ -219,7 +222,7 @@ with jest. comfortable working in a team, did agile sprints at the logistics sta
         "id": "c07", "name": "Divya Sharma", "tier": "strong", "probe": None,
         "reason": "Strong MERN with deployment depth.",
         "text": """Divya Sharma
-Hyderabad, India | divya.sharma@email.com | linkedin.com/in/divyasharma
+Hyderabad, India | divya.sharma@email.com | linkedin.com/in/divyasharma | github.com/divyasharma
 
 EDUCATION
 B.Tech Information Technology, 2022 - 2026
@@ -358,7 +361,7 @@ JavaScript, React, HTML, CSS, SQL, MySQL, REST APIs, Git, Bootstrap, jQuery
         "reason": "Right shape of work, wrong stack — Python/Django instead of JS. "
                   "Semantic channel should see the adjacency; lexical should not overrate.",
         "text": """Vikram Singh
-Jaipur, India | vikram.singh@email.com
+Jaipur, India | vikram.singh@email.com | github.com/vikramsingh-py
 
 EDUCATION
 B.Tech Computer Science, 2021 - 2025
@@ -386,7 +389,7 @@ Linux, Agile
         "id": "c13", "name": "Rahul Menon", "tier": "medium", "probe": None,
         "reason": "Java backend. Adjacent but further from the JD than Vikram.",
         "text": """Rahul Menon
-Kochi, India | rahul.menon@email.com
+Kochi, India | rahul.menon@email.com | github.com/rahulmenon
 
 EDUCATION
 B.Tech Information Technology, 2021 - 2025

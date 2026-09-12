@@ -1,5 +1,5 @@
 Sneha Kulkarni
-Mumbai, India | sneha.k@email.com
+Mumbai, India | sneha.k@email.com | github.com/snehak
 
 SKILLS
 JavaScript, React, Node.js, Express, MongoDB, SQL, REST APIs, Git, Docker, AWS,

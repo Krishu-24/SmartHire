@@ -1,9 +1,44 @@
+/**
+ * Application shell.
+ *
+ * Two pieces of state deserve a note, because they behave differently on purpose:
+ *
+ *   alpha   never touches the network. The backend ships every alpha-independent
+ *           sub-score, so dragging the weight slider re-ranks in the browser via
+ *           lib/rescore.js. scripts/check_parity.py proves that arithmetic
+ *           matches fusion.py to 1e-9.
+ *
+ *   blind   DOES round-trip, and cannot change a single score. Identity is
+ *           stripped at parse time and never reaches the engine, so the server
+ *           only re-renders which name goes on a row. That is the whole claim,
+ *           and the reason it is safe to flip mid-demo: the numbers do not move.
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
+import './App.css'
 import { rescore, poolStats } from './lib/rescore'
-import { StatusBar } from './components/Charts'
-import EvidenceDrawer from './components/EvidenceDrawer'
-import { WeightRail, InsightPanel, ChatDock, DiffPanel, LoadingBoard } from './components/Panels'
+import { useTheme } from './lib/ui'
+import Board from './components/Board'
+import Detail from './components/Detail'
+import { FusionInspector, TaxonomyExplorer, JobAudit, FeedbackView } from './components/Views'
+
+const TABS = [
+  ['board', 'Shortlist'],
+  ['fusion', 'Fusion inspector'],
+  ['taxonomy', 'Skill ontology'],
+  ['audit', 'JD audit'],
+  ['feedback', 'Candidate feedback'],
+]
+
+function Toggle({ checked, onChange, label, title }) {
+  return (
+    <button className="toggle" role="switch" aria-checked={checked}
+            onClick={() => onChange(!checked)} title={title}>
+      <span className="toggle__track"><span className="toggle__thumb" /></span>
+      <span className="toggle__label">{label}</span>
+    </button>
+  )
+}
 
 export default function App() {
   const [payload, setPayload] = useState(null)
@@ -12,14 +47,16 @@ export default function App() {
 
   const [alpha, setAlpha] = useState(0.5)
   const [gate, setGate] = useState(false)
+  const [blind, setBlind] = useState(false)
+  const [enrichment, setEnrichment] = useState(true)
 
+  const [tab, setTab] = useState('board')
   const [selected, setSelected] = useState(null)
-  const [compare, setCompare] = useState([])
 
+  const [theme, toggleTheme] = useTheme()
   const fileRef = useRef(null)
 
-  /* ── Ranking is recomputed here, in the browser, from sub-scores the backend
-        already sent. Dragging the slider never touches the network. ───────── */
+  /* Ranking recomputed in the browser from sub-scores already in the payload. */
   const candidates = useMemo(() => {
     if (!payload) return []
     return rescore(payload.candidates, alpha, gate, payload.meta)
@@ -27,7 +64,7 @@ export default function App() {
 
   const stats = useMemo(() => poolStats(candidates), [candidates])
 
-  // Keep the open drawer pointed at fresh numbers as the slider moves.
+  // Keep an open inspector pointed at fresh numbers as the slider moves.
   const liveSelected = selected
     ? candidates.find((c) => c.doc_id === selected.doc_id) ?? null
     : null
@@ -45,8 +82,8 @@ export default function App() {
       setPayload(data)
       setAlpha(data.meta.alpha)
       setGate(data.meta.gate)
+      setBlind(data.meta.blind)
       setSelected(null)
-      setCompare([])
     } catch (e) {
       setError(e.message)
     } finally {
@@ -54,7 +91,8 @@ export default function App() {
     }
   }, [])
 
-  const loadSample = () => run(() => fetch('/api/analyze/sample', { method: 'POST' }))
+  const loadSample = () => run(() => fetch(
+    `/api/analyze/sample?enrichment=${enrichment}&blind_mode=${blind}`, { method: 'POST' }))
 
   const upload = (files) => {
     const list = [...files]
@@ -67,51 +105,70 @@ export default function App() {
     const form = new FormData()
     form.append('jd', jd)
     for (const r of resumes) form.append('resumes', r)
+    form.append('enrichment', String(enrichment))
+    form.append('blind_mode', String(blind))
     run(() => fetch('/api/analyze', { method: 'POST', body: form }))
   }
 
-  const toggleCompare = (cand, e) => {
-    e.stopPropagation()
-    setCompare((prev) => {
-      if (prev.includes(cand.doc_id)) return prev.filter((d) => d !== cand.doc_id)
-      return [...prev, cand.doc_id].slice(-2)
-    })
-  }
+  /* Blind mode is a server-side re-render: pseudonyms come from pool position,
+     and the resume text has to be masked for display. Scores are untouched. */
+  const setBlindMode = useCallback((next) => {
+    setBlind(next)
+    if (!payload) return
+    fetch(`/api/rank?alpha=${alpha}&gate=${gate}&blind_mode=${next}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setPayload(d))
+      .catch(() => {})
+  }, [payload, alpha, gate])
 
-  const comparePair = compare
-    .map((id) => candidates.find((c) => c.doc_id === id))
-    .filter(Boolean)
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setSelected(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
-  /* ── Empty state ───────────────────────────────────────────────────────── */
+  /* ── Empty state ─────────────────────────────────────────────────────── */
   if (!payload && !loading) {
     return (
       <div className="app">
         <div className="empty">
-          <div>
-            <h1>Rank a batch of resumes<br />against one job description.</h1>
+          <div className="empty__inner">
+            <h1>Rank a batch of resumes against one job description.</h1>
             <p>
-              Hybrid matching: BM25 and per-skill lexical coverage on one side, sentence
-              embeddings and per-skill semantic inference on the other. Every score traces
-              back to a line of text. No language model scores anything.
+              Two independent channels — BM25 with per-skill lexical coverage, and
+              sentence embeddings with per-skill semantic inference — fused into one
+              ranking. Every score traces back to a line of text, weighted by where
+              on the resume that line appears and whether any public code backs it up.
+              No language model scores anything.
             </p>
+
             {error && (
-              <p style={{ color: 'var(--missing)', fontFamily: 'var(--mono)', fontSize: 12 }}>
+              <div className="banner banner--error" style={{ marginTop: 16, textAlign: 'left' }}>
                 {error}
-              </p>
+              </div>
             )}
-            <div style={{ display: 'flex', gap: 9, justifyContent: 'center' }}>
-              <button className="btn primary" onClick={loadSample}>
+
+            <div className="empty__actions">
+              <button className="btn btn--primary" onClick={loadSample}>
                 Analyse the sample corpus
               </button>
               <button className="btn" onClick={() => fileRef.current?.click()}>
                 Upload JD + resumes
               </button>
-              <input
-                ref={fileRef} type="file" accept="application/pdf" multiple hidden
-                onChange={(e) => e.target.files?.length && upload(e.target.files)}
-              />
+              <input ref={fileRef} type="file" accept="application/pdf" multiple hidden
+                     onChange={(e) => e.target.files?.length && upload(e.target.files)} />
             </div>
-            <p className="mono" style={{ fontSize: 10.5, color: 'var(--ink-4)', marginTop: 18 }}>
+
+            <div className="empty__actions" style={{ marginTop: 14 }}>
+              <Toggle checked={enrichment} onChange={setEnrichment}
+                      label="Use external evidence (GitHub)"
+                      title="Fetch public repositories to verify claims. Cached to disk; falls back silently when offline." />
+              <Toggle checked={blind} onChange={setBlind}
+                      label="Blind screening"
+                      title="Hide identity. Scoring is already blind — this controls what you can see." />
+            </div>
+
+            <p className="note" style={{ marginTop: 18 }}>
               Name the job description file with “jd” or “job” so it is picked out of the batch.
             </p>
           </div>
@@ -122,137 +179,136 @@ export default function App() {
 
   const meta = payload?.meta
   const job = payload?.job
+  const pool = meta?.pool_integrity
 
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">
-          <span className="mark">◆</span>
-          InterLoom
-        </div>
+        <div className="brand"><span className="brand__mark">IL</span> InterLoom</div>
+
         {job && (
-          <div className="role-title">
-            <strong>{job.title}</strong> · {meta.pool_size} candidates
+          <div className="topbar__role">
+            <strong>{job.title}</strong>
+            <span>{meta.pool_size} candidates</span>
           </div>
         )}
-        <div className="topbar-stats">
+
+        <div className="topbar__spacer" />
+
+        <div className="topbar__stats">
           <div className="stat">
-            <div className="v num">{stats.spread.toFixed(1)}</div>
-            <div className="l">spread</div>
+            <div className="stat__v num">{stats.spread.toFixed(1)}</div>
+            <div className="stat__l">spread</div>
           </div>
           <div className="stat">
-            <div className="v num">{stats.max.toFixed(1)}</div>
-            <div className="l">top score</div>
+            <div className="stat__v num">{stats.max.toFixed(1)}</div>
+            <div className="stat__l">top score</div>
           </div>
+
+          <Toggle checked={blind} onChange={setBlindMode} label="Blind"
+                  title="Identity never reached the engine. This only controls what you can see — the scores do not change." />
+
+          <button className="btn btn--ghost btn--icon" onClick={toggleTheme}
+                  aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                  title="Toggle theme">
+            {theme === 'dark' ? '☀' : '☾'}
+          </button>
+
           <button className="btn" onClick={() => fileRef.current?.click()}>New batch</button>
-          <input
-            ref={fileRef} type="file" accept="application/pdf" multiple hidden
-            onChange={(e) => e.target.files?.length && upload(e.target.files)}
-          />
+          <input ref={fileRef} type="file" accept="application/pdf" multiple hidden
+                 onChange={(e) => e.target.files?.length && upload(e.target.files)} />
         </div>
       </header>
 
-      <div className="workspace">
+      <nav className="tabs" role="tablist">
+        {TABS.map(([id, label]) => (
+          <button key={id} role="tab" className="tab" aria-selected={tab === id}
+                  onClick={() => setTab(id)}>
+            {label}
+            {id === 'board' && <span className="tab__count">{candidates.length}</span>}
+            {id === 'audit' && job?.bias && <span className="tab__count">{job.bias.findings.length}</span>}
+          </button>
+        ))}
+      </nav>
+
+      <div className={`workspace ${liveSelected ? 'workspace--detail' : ''}`}>
         <aside className="col rail">
-          {meta && job && (
-            <WeightRail alpha={alpha} setAlpha={setAlpha} gate={gate} setGate={setGate}
-                        meta={meta} skills={job.skills} />
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>Matching weight</div>
+            <div className="slider">
+              <input type="range" min="0" max="1" step="0.01" value={alpha}
+                     onChange={(e) => setAlpha(parseFloat(e.target.value))}
+                     aria-label="Keyword to semantic weighting" />
+              <div className="slider__ends">
+                <span>semantic</span>
+                <span className="mono">α {alpha.toFixed(2)}</span>
+                <span>keyword</span>
+              </div>
+            </div>
+            <p className="note" style={{ marginTop: 6 }}>
+              Re-ranks in the browser — no network call.
+            </p>
+          </div>
+
+          <div>
+            <Toggle checked={gate} onChange={setGate} label="Must-have gate"
+                    title="Scale scores by how much of the required set a candidate covers. Floored, so it re-ranks rather than eliminates." />
+            <p className="note" style={{ marginTop: 6 }}>
+              Scales by required coverage, floored at {meta?.gate_floor} so a strong
+              near-miss stays visible.
+            </p>
+          </div>
+
+          {pool && (
+            <div>
+              <div className="eyebrow" style={{ marginBottom: 6 }}>Pool integrity</div>
+              <div className="kv"><span className="kv__k">Unsupported claims</span>
+                <span className="kv__v">{pool.stuffing_flagged}</span></div>
+              <div className="kv"><span className="kv__k">Invisible text</span>
+                <span className="kv__v">{pool.hidden_text_flagged}</span></div>
+              <div className="kv"><span className="kv__k">Profiles found</span>
+                <span className="kv__v">{pool.profiles_found}</span></div>
+              <div className="kv"><span className="kv__k">Code-verified</span>
+                <span className="kv__v">{pool.fully_corroborated}/{pool.checked}</span></div>
+              <div className="kv"><span className="kv__k">README-only claims</span>
+                <span className="kv__v">{pool.readme_only_claims}</span></div>
+            </div>
           )}
+
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>Run</div>
+            <div className="kv"><span className="kv__k">Engine</span>
+              <span className="kv__v">{meta?.semantic_backend}</span></div>
+            <div className="kv"><span className="kv__k">Elapsed</span>
+              <span className="kv__v">{meta?.elapsed_ms} ms</span></div>
+            <div className="kv"><span className="kv__k">PII removed</span>
+              <span className="kv__v">{meta?.redactions}</span></div>
+            <div className="kv"><span className="kv__k">Parse warnings</span>
+              <span className="kv__v">{meta?.parse_warnings}</span></div>
+            <div className="kv"><span className="kv__k">External evidence</span>
+              <span className="kv__v">{meta?.enrichment ? 'on' : 'off'}</span></div>
+          </div>
         </aside>
 
-        <main className="col">
-          {loading ? (
-            <LoadingBoard />
-          ) : (
-            <>
-              {comparePair.length === 2 && (
-                <DiffPanel a={comparePair[0]} b={comparePair[1]} onClose={() => setCompare([])} />
-              )}
-              <LayoutGroup>
-                <div className="board">
-                  <AnimatePresence initial={false}>
-                    {candidates.map((c) => (
-                      <motion.article
-                        key={c.doc_id}
-                        layout
-                        layoutId={c.doc_id}
-                        transition={{ type: 'spring', stiffness: 520, damping: 42 }}
-                        className={`card glass ${c.flag} ${c.rank <= 3 ? 'top3' : ''} ${
-                          selected?.doc_id === c.doc_id ? 'selected' : ''}`}
-                        onClick={() => setSelected(c)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ')
-                          && (e.preventDefault(), setSelected(c))}
-                        aria-label={`${c.name}, rank ${c.rank}, score ${c.score.toFixed(1)}`}
-                      >
-                        <div className="rank num">{String(c.rank).padStart(2, '0')}</div>
+        <main className="col main">
+          {error && <div className="banner banner--error" style={{ marginBottom: 12 }}>{error}</div>}
 
-                        <div style={{ minWidth: 0 }}>
-                          <div className="name">{c.name}</div>
-                          <div className="meta">
-                            {c.flag !== 'CONSENSUS' && (
-                              <span className={`flagtag ${c.flag}`}>
-                                {c.flag === 'HIDDEN_GEM' ? 'HIDDEN GEM' : 'SURFACE'}
-                              </span>
-                            )}
-                            <span className="mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>
-                              {Math.round(c.primitives.req_coverage * 100)}% required
-                            </span>
-                            {c.primitives.quality < 0.5 && (
-                              <span className="mono" style={{ fontSize: 10, color: 'var(--weak)' }}>
-                                ⚠ parse {c.primitives.quality.toFixed(2)}
-                              </span>
-                            )}
-                            <button
-                              className="mono"
-                              onClick={(e) => toggleCompare(c, e)}
-                              style={{
-                                font: 'inherit', fontSize: 9.5, cursor: 'pointer',
-                                background: compare.includes(c.doc_id) ? 'var(--accent-d)' : 'transparent',
-                                color: compare.includes(c.doc_id) ? 'var(--accent)' : 'var(--ink-4)',
-                                border: '1px solid var(--glass-line)', borderRadius: 4,
-                                padding: '1px 5px',
-                              }}
-                            >
-                              compare
-                            </button>
-                          </div>
-                          <StatusBar candidate={c} />
-                        </div>
-
-                        <div className="score">
-                          <div className="v num">{c.score.toFixed(1)}</div>
-                          <div className="sub">
-                            K {c.k_score.toFixed(2)} · M {c.m_score.toFixed(2)}
-                          </div>
-                        </div>
-                      </motion.article>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </LayoutGroup>
-            </>
+          {tab === 'board' && (
+            <Board candidates={candidates} selected={liveSelected}
+                   onSelect={setSelected} loading={loading} />
+          )}
+          {tab === 'fusion' && <FusionInspector candidates={candidates} meta={meta} />}
+          {tab === 'taxonomy' && <TaxonomyExplorer job={job} candidates={candidates} />}
+          {tab === 'audit' && <JobAudit job={job} />}
+          {tab === 'feedback' && (
+            <FeedbackView alpha={alpha} gate={gate} shortlist={3} ready={!!payload} />
           )}
         </main>
 
-        <aside className="col insight">
-          {meta && candidates.length > 0 && (
-            <>
-              <InsightPanel candidates={candidates} selected={liveSelected}
-                            onSelect={setSelected} bias={job?.bias} meta={meta} />
-              <ChatDock candidates={candidates} alpha={alpha} gate={gate} />
-            </>
-          )}
+        <aside className="col inspector">
+          <Detail candidate={liveSelected} onClose={() => setSelected(null)} />
         </aside>
       </div>
-
-      <EvidenceDrawer
-        candidate={liveSelected}
-        alpha={alpha}
-        poolSize={meta?.pool_size ?? 0}
-        onClose={() => setSelected(null)}
-      />
     </div>
   )
 }

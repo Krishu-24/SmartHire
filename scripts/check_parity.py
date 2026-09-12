@@ -19,8 +19,10 @@ from dataclasses import asdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+import _console  # noqa: F401  (configures stdout encoding on import)
+
 from backend import config                                    # noqa: E402
-from backend.core import engine as engine_mod, fusion, parser, skills  # noqa: E402
+from backend.core import assess, engine as engine_mod, fusion, parser, skills  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RESCORE_JS = ROOT / "frontend" / "src" / "lib" / "rescore.js"
@@ -59,11 +61,17 @@ def build_pool():
     if not jd_path.exists() or not resume_paths:
         sys.exit("No corpus found. Run: python scripts/make_synthetic_corpus.py")
 
-    jd = parser.extract(jd_path)
+    jd = parser.extract(jd_path, anonymise=False)
     skill_set = skills.extract_skills(jd.text)
     docs = parser.extract_many(resume_paths)
     subs = engine_mod.Engine().build(docs, jd.text, skill_set)
-    return fusion.prepare(subs, skill_set), source
+    primitives = fusion.prepare(subs, skill_set)
+
+    # Apply the same adjustment pass /api/analyze applies. Without this the
+    # pool would carry doc_multiplier == 1.0 everywhere and the parity check
+    # would never exercise the term it exists to protect.
+    fusion.adjust(primitives, assess.build(docs, skill_set, primitives).adjustments)
+    return primitives, source
 
 
 def main() -> int:

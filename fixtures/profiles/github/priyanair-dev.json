@@ -1,0 +1,210 @@
+{
+  "source": "github",
+  "handle": "priyanair-dev",
+  "url": "https://github.com/priyanair-dev",
+  "status": "ok",
+  "message": "synthetic fixture profile (no network call) \u2014 code proves Node.js, which the resume never names",
+  "skills": {
+    "node.js": [
+      {
+        "skill_id": "node.js",
+        "source": "github",
+        "kind": "dependency",
+        "where": "bookmark-api",
+        "detail": "`engines.node` declared and `express` depended on in package.json"
+      }
+    ],
+    "express": [
+      {
+        "skill_id": "express",
+        "source": "github",
+        "kind": "dependency",
+        "where": "bookmark-api",
+        "detail": "depends on `express` in package.json"
+      }
+    ],
+    "mongodb": [
+      {
+        "skill_id": "mongodb",
+        "source": "github",
+        "kind": "dependency",
+        "where": "bookmark-api",
+        "detail": "depends on `mongoose` in package.json"
+      }
+    ],
+    "rest api": [
+      {
+        "skill_id": "rest api",
+        "source": "github",
+        "kind": "dependency",
+        "where": "bookmark-api",
+        "detail": "depends on `axios` in package.json"
+      }
+    ],
+    "jwt": [
+      {
+        "skill_id": "jwt",
+        "source": "github",
+        "kind": "dependency",
+        "where": "bookmark-api",
+        "detail": "depends on `jsonwebtoken` in package.json"
+      }
+    ],
+    "jest": [
+      {
+        "skill_id": "jest",
+        "source": "github",
+        "kind": "dependency",
+        "where": "bookmark-api",
+        "detail": "depends on `jest` in package.json"
+      }
+    ],
+    "websockets": [
+      {
+        "skill_id": "websockets",
+        "source": "github",
+        "kind": "dependency",
+        "where": "chat-relay",
+        "detail": "depends on `socket.io` in package.json"
+      }
+    ],
+    "redis": [
+      {
+        "skill_id": "redis",
+        "source": "github",
+        "kind": "dependency",
+        "where": "chat-relay",
+        "detail": "depends on `ioredis` in package.json"
+      }
+    ],
+    "javascript": [
+      {
+        "skill_id": "javascript",
+        "source": "github",
+        "kind": "language",
+        "where": "bookmark-api",
+        "detail": "JavaScript is 96% of the code"
+      }
+    ],
+    "react": [
+      {
+        "skill_id": "react",
+        "source": "github",
+        "kind": "dependency",
+        "where": "portfolio-site",
+        "detail": "depends on `react` in package.json"
+      }
+    ],
+    "html": [
+      {
+        "skill_id": "html",
+        "source": "github",
+        "kind": "language",
+        "where": "portfolio-site",
+        "detail": "HTML is 31% of the code"
+      }
+    ],
+    "css": [
+      {
+        "skill_id": "css",
+        "source": "github",
+        "kind": "language",
+        "where": "portfolio-site",
+        "detail": "CSS is 24% of the code"
+      }
+    ],
+    "git": [
+      {
+        "skill_id": "git",
+        "source": "github",
+        "kind": "file",
+        "where": "bookmark-api",
+        "detail": "repository contains .gitignore"
+      }
+    ]
+  },
+  "repos": [
+    {
+      "name": "bookmark-api",
+      "description": "REST service for a bookmarking app",
+      "url": "https://github.com/EXAMPLE/bookmark-api",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "JavaScript"
+      ],
+      "manifests": [
+        "package.json"
+      ],
+      "readme_skills": [
+        "node.js",
+        "express",
+        "mongodb",
+        "rest api",
+        "jwt",
+        "jest"
+      ],
+      "code_skills": [
+        "node.js",
+        "express",
+        "mongodb",
+        "rest api",
+        "jwt",
+        "jest"
+      ]
+    },
+    {
+      "name": "chat-relay",
+      "description": "WebSocket relay for a group chat",
+      "url": "https://github.com/EXAMPLE/chat-relay",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "JavaScript"
+      ],
+      "manifests": [
+        "package.json"
+      ],
+      "readme_skills": [
+        "node.js",
+        "websockets",
+        "express",
+        "redis"
+      ],
+      "code_skills": [
+        "node.js",
+        "websockets",
+        "express",
+        "redis"
+      ]
+    },
+    {
+      "name": "portfolio-site",
+      "description": "Personal site",
+      "url": "https://github.com/EXAMPLE/portfolio-site",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "HTML",
+        "CSS",
+        "JavaScript"
+      ],
+      "manifests": [
+        "package.json"
+      ],
+      "readme_skills": [
+        "html",
+        "css",
+        "javascript",
+        "react"
+      ],
+      "code_skills": [
+        "html",
+        "css",
+        "javascript",
+        "react"
+      ]
+    }
+  ],
+  "fetched_at": 0.0
+}

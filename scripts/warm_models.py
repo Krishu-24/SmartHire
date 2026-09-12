@@ -15,6 +15,8 @@ import pathlib
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+import _console  # noqa: F401  (configures stdout encoding on import)
+
 from backend import config
 
 

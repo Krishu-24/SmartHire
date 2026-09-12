@@ -44,6 +44,12 @@ class SkillEvidence:
     chunk_text: str = ""
     chunk_start: int = -1
     chunk_end: int = -1
+    # Where the LEXICAL match was found, and what that placement is worth.
+    # Carried here rather than recomputed downstream because only the engine
+    # knows which chunk actually produced the match.
+    section: str = "UNKNOWN"
+    context_weight: float = 1.0
+    context_reason: str = ""
 
 
 @dataclass(slots=True)
@@ -207,6 +213,18 @@ class Engine:
                     if ev.chunk_idx < 0:
                         ev.chunk_idx = local
                         ev.chunk_text, ev.chunk_start, ev.chunk_end = chunk.text, chunk.start, chunk.end
+
+                # Price the placement of the lexical match. Only the lexical
+                # channel is adjusted: the semantic channel reads the surrounding
+                # prose already, so weighting it here would charge the candidate
+                # twice for one thin mention.
+                if ev.lex > 0.0 and ev.chunk_idx >= 0:
+                    cx = doc.context_for(ev.chunk_idx)
+                    if cx is not None:
+                        ev.section = cx.section
+                        ev.context_weight = cx.weight
+                        ev.context_reason = cx.reason
+
                 sub.evidence[skill.id] = ev
 
             out.append(sub)

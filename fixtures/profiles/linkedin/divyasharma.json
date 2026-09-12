@@ -1,0 +1,56 @@
+{
+  "source": "linkedin",
+  "handle": "divyasharma",
+  "url": "https://linkedin.com/in/divyasharma",
+  "status": "ok",
+  "message": "synthetic fixture profile (no network call) \u2014 supplied profile export: 4 listed skills, 1 certification",
+  "skills": {
+    "react": [
+      {
+        "skill_id": "react",
+        "source": "linkedin",
+        "kind": "listed",
+        "where": "profile",
+        "detail": "listed as a skill: React"
+      }
+    ],
+    "node.js": [
+      {
+        "skill_id": "node.js",
+        "source": "linkedin",
+        "kind": "listed",
+        "where": "profile",
+        "detail": "listed as a skill: Node.js"
+      }
+    ],
+    "mongodb": [
+      {
+        "skill_id": "mongodb",
+        "source": "linkedin",
+        "kind": "listed",
+        "where": "profile",
+        "detail": "listed as a skill: MongoDB"
+      }
+    ],
+    "aws": [
+      {
+        "skill_id": "aws",
+        "source": "linkedin",
+        "kind": "certification",
+        "where": "profile",
+        "detail": "certification: AWS Certified Cloud Practitioner"
+      }
+    ],
+    "agile": [
+      {
+        "skill_id": "agile",
+        "source": "linkedin",
+        "kind": "listed",
+        "where": "profile",
+        "detail": "listed as a skill: Agile Methodologies"
+      }
+    ]
+  },
+  "repos": [],
+  "fetched_at": 0.0
+}

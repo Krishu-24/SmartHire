@@ -18,6 +18,8 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+import _console  # noqa: F401  (configures stdout encoding on import)
+
 from backend import config                                    # noqa: E402
 from backend.core import engine as engine_mod, explainer, fusion, parser, skills  # noqa: E402
 

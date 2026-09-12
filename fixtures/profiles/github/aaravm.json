@@ -1,0 +1,210 @@
+{
+  "source": "github",
+  "handle": "aaravm",
+  "url": "https://github.com/aaravm",
+  "status": "ok",
+  "message": "synthetic fixture profile (no network call) \u2014 3 public repositories, claims and code agree",
+  "skills": {
+    "react": [
+      {
+        "skill_id": "react",
+        "source": "github",
+        "kind": "dependency",
+        "where": "campushub",
+        "detail": "depends on `react` in package.json"
+      }
+    ],
+    "node.js": [
+      {
+        "skill_id": "node.js",
+        "source": "github",
+        "kind": "dependency",
+        "where": "campushub",
+        "detail": "depends on `express` in package.json"
+      }
+    ],
+    "express": [
+      {
+        "skill_id": "express",
+        "source": "github",
+        "kind": "dependency",
+        "where": "campushub",
+        "detail": "depends on `express` in package.json"
+      }
+    ],
+    "mongodb": [
+      {
+        "skill_id": "mongodb",
+        "source": "github",
+        "kind": "dependency",
+        "where": "campushub",
+        "detail": "depends on `mongoose` in package.json"
+      }
+    ],
+    "jwt": [
+      {
+        "skill_id": "jwt",
+        "source": "github",
+        "kind": "dependency",
+        "where": "campushub",
+        "detail": "depends on `jsonwebtoken` in package.json"
+      }
+    ],
+    "docker": [
+      {
+        "skill_id": "docker",
+        "source": "github",
+        "kind": "file",
+        "where": "campushub",
+        "detail": "repository contains Dockerfile"
+      }
+    ],
+    "jest": [
+      {
+        "skill_id": "jest",
+        "source": "github",
+        "kind": "dependency",
+        "where": "campushub",
+        "detail": "depends on `jest` in package.json"
+      }
+    ],
+    "typescript": [
+      {
+        "skill_id": "typescript",
+        "source": "github",
+        "kind": "language",
+        "where": "inventory-recon",
+        "detail": "TypeScript is 71% of the code"
+      }
+    ],
+    "rest api": [
+      {
+        "skill_id": "rest api",
+        "source": "github",
+        "kind": "dependency",
+        "where": "inventory-recon",
+        "detail": "depends on `axios` in package.json"
+      }
+    ],
+    "javascript": [
+      {
+        "skill_id": "javascript",
+        "source": "github",
+        "kind": "language",
+        "where": "dash-widgets",
+        "detail": "JavaScript is 84% of the code"
+      }
+    ],
+    "css": [
+      {
+        "skill_id": "css",
+        "source": "github",
+        "kind": "language",
+        "where": "dash-widgets",
+        "detail": "CSS is 12% of the code"
+      }
+    ],
+    "git": [
+      {
+        "skill_id": "git",
+        "source": "github",
+        "kind": "file",
+        "where": "campushub",
+        "detail": "repository contains .gitignore"
+      }
+    ]
+  },
+  "repos": [
+    {
+      "name": "campushub",
+      "description": "Full stack campus event platform",
+      "url": "https://github.com/EXAMPLE/campushub",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "JavaScript",
+        "CSS",
+        "Dockerfile"
+      ],
+      "manifests": [
+        "package.json",
+        "Dockerfile"
+      ],
+      "readme_skills": [
+        "react",
+        "node.js",
+        "express",
+        "mongodb",
+        "jwt",
+        "docker",
+        "jest"
+      ],
+      "code_skills": [
+        "react",
+        "node.js",
+        "express",
+        "mongodb",
+        "jwt",
+        "docker",
+        "jest"
+      ]
+    },
+    {
+      "name": "inventory-recon",
+      "description": "Inventory reconciliation service",
+      "url": "https://github.com/EXAMPLE/inventory-recon",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "TypeScript",
+        "JavaScript"
+      ],
+      "manifests": [
+        "package.json"
+      ],
+      "readme_skills": [
+        "typescript",
+        "node.js",
+        "express",
+        "mongodb",
+        "rest api",
+        "jest"
+      ],
+      "code_skills": [
+        "typescript",
+        "node.js",
+        "express",
+        "mongodb",
+        "rest api",
+        "jest"
+      ]
+    },
+    {
+      "name": "dash-widgets",
+      "description": "Reusable React dashboard widgets",
+      "url": "https://github.com/EXAMPLE/dash-widgets",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "JavaScript",
+        "CSS"
+      ],
+      "manifests": [
+        "package.json"
+      ],
+      "readme_skills": [
+        "react",
+        "javascript",
+        "css",
+        "jest"
+      ],
+      "code_skills": [
+        "react",
+        "javascript",
+        "css",
+        "jest"
+      ]
+    }
+  ],
+  "fetched_at": 0.0
+}

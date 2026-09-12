@@ -1,0 +1,102 @@
+{
+  "source": "github",
+  "handle": "rahulmenon",
+  "url": "https://github.com/rahulmenon",
+  "status": "ok",
+  "message": "synthetic fixture profile (no network call) \u2014 README advertises Kubernetes, AWS and Terraform the code never touches",
+  "skills": {
+    "node.js": [
+      {
+        "skill_id": "node.js",
+        "source": "github",
+        "kind": "dependency",
+        "where": "task-tracker",
+        "detail": "depends on `express` in package.json"
+      }
+    ],
+    "express": [
+      {
+        "skill_id": "express",
+        "source": "github",
+        "kind": "dependency",
+        "where": "task-tracker",
+        "detail": "depends on `express` in package.json"
+      }
+    ],
+    "mongodb": [
+      {
+        "skill_id": "mongodb",
+        "source": "github",
+        "kind": "dependency",
+        "where": "task-tracker",
+        "detail": "depends on `mongoose` in package.json"
+      }
+    ],
+    "python": [
+      {
+        "skill_id": "python",
+        "source": "github",
+        "kind": "language",
+        "where": "algo-notes",
+        "detail": "Python is 100% of the code"
+      }
+    ],
+    "git": [
+      {
+        "skill_id": "git",
+        "source": "github",
+        "kind": "file",
+        "where": "task-tracker",
+        "detail": "repository contains .gitignore"
+      }
+    ]
+  },
+  "repos": [
+    {
+      "name": "task-tracker",
+      "description": "Task tracking API",
+      "url": "https://github.com/EXAMPLE/task-tracker",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "JavaScript"
+      ],
+      "manifests": [
+        "package.json"
+      ],
+      "readme_skills": [
+        "node.js",
+        "express",
+        "mongodb",
+        "kubernetes",
+        "aws",
+        "docker",
+        "terraform",
+        "microservices"
+      ],
+      "code_skills": [
+        "node.js",
+        "express",
+        "mongodb"
+      ]
+    },
+    {
+      "name": "algo-notes",
+      "description": "Practice solutions",
+      "url": "https://github.com/EXAMPLE/algo-notes",
+      "stars": 0,
+      "pushed_at": "2024-08-30",
+      "languages": [
+        "Python"
+      ],
+      "manifests": [],
+      "readme_skills": [
+        "python"
+      ],
+      "code_skills": [
+        "python"
+      ]
+    }
+  ],
+  "fetched_at": 0.0
+}

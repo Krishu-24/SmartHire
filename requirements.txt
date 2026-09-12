@@ -19,3 +19,6 @@ rapidfuzz               # C++ fuzzy matching for typo tolerance
 sentence-transformers   # all-MiniLM-L6-v2 (pulls torch — the big one)
 numpy
 scikit-learn            # TF-IDF + TruncatedSVD fallback if the model is unavailable
+
+# --- External profile enrichment (GitHub / LinkedIn) ---
+requests                # public REST calls, disk-cached, never blocks the pipeline

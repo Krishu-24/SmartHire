@@ -15,7 +15,8 @@ from dataclasses import dataclass, field
 from rapidfuzz import fuzz
 
 from backend import config
-from backend.core import normalizer
+from backend.core import blind, context, normalizer
+from backend.core.context import ChunkContext
 from backend.core.normalizer import Chunk
 
 try:
@@ -65,19 +66,43 @@ _HEADER_RE = re.compile(r"^[A-Za-z][A-Za-z /&'-]{2,58}:?$")
 
 
 @dataclass(slots=True)
+class HiddenSpan:
+    """Text present in the PDF but not meant to be seen by a human reader."""
+    text: str
+    reason: str                 # invisible-colour | sub-legible-size
+    detail: str
+    page: int
+
+
+@dataclass(slots=True)
 class ParsedDoc:
-    """One ingested document, ready for the engine."""
+    """One ingested document, ready for the engine.
+
+    Two texts, and the difference matters. `text` is what the engine matched on
+    and what every chunk span indexes — it has already had identity removed, so
+    the ranking is blind by construction rather than by policy. `raw_text` keeps
+    the pre-redaction form for provenance only; nothing scores against it.
+    """
     doc_id: str
     name: str
     filename: str
-    text: str                                       # display text; chunk spans index this
+    text: str                                       # redacted; chunk spans index this
+    raw_text: str = ""                              # pre-redaction, never scored
     chunks: list[Chunk] = field(default_factory=list)
+    chunk_contexts: list[ChunkContext] = field(default_factory=list)
     sections: dict[str, tuple[int, int]] = field(default_factory=dict)
+    redaction: blind.RedactionReport | None = None
+    hidden: list[HiddenSpan] = field(default_factory=list)
     engine: str = "none"
     pages: int = 0
     chars: int = 0
     quality: float = 0.0
     warnings: list[str] = field(default_factory=list)
+
+    def context_for(self, chunk_idx: int) -> ChunkContext | None:
+        if 0 <= chunk_idx < len(self.chunk_contexts):
+            return self.chunk_contexts[chunk_idx]
+        return None
 
     @property
     def canonical_text(self) -> str:
@@ -109,6 +134,62 @@ def _looks_usable(text: str) -> bool:
         len(text.strip()) >= config.MIN_CHARS_FOR_FAST_PATH
         and normalizer.alpha_ratio(text) >= config.MIN_ALPHA_RATIO
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Invisible text
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _luma(packed: int) -> float:
+    """Perceived brightness of a PyMuPDF packed sRGB colour, 0 (black) to 1 (white)."""
+    r = (packed >> 16) & 0xFF
+    g = (packed >> 8) & 0xFF
+    b = packed & 0xFF
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+
+
+def find_hidden(path: pathlib.Path) -> list[HiddenSpan]:
+    """Text a human reader cannot see but a parser reads perfectly.
+
+    The oldest ATS attack there is: paste the job description into the footer in
+    white-on-white, or at one point, and let the keyword matcher find it. We read
+    the span attributes rather than the flattened text, so the trick is visible to
+    us exactly because it is invisible to everyone else.
+
+    Best-effort by design — a PDF can hide text in ways this does not model (a
+    white rectangle drawn over black text, a clipping path). Silence from this
+    function is not a clean bill of health, and nothing downstream treats it as one.
+    """
+    found: list[HiddenSpan] = []
+    try:
+        with pymupdf.open(path) as doc:
+            for page_no, page in enumerate(doc, start=1):
+                data = page.get_text("dict")
+                for block in data.get("blocks", []):
+                    for line in block.get("lines", []):
+                        for span in line.get("spans", []):
+                            text = (span.get("text") or "").strip()
+                            if len(text) < 12:      # too short to be a keyword dump
+                                continue
+                            size = float(span.get("size", 12.0))
+                            luma = _luma(int(span.get("color", 0)))
+
+                            if luma >= config.HIDDEN_TEXT_MIN_LUMA:
+                                found.append(HiddenSpan(
+                                    text=text, reason="invisible-colour",
+                                    detail=f"rendered at {luma:.0%} brightness on a white page",
+                                    page=page_no,
+                                ))
+                            elif size < config.HIDDEN_TEXT_MIN_SIZE:
+                                found.append(HiddenSpan(
+                                    text=text, reason="sub-legible-size",
+                                    detail=f"rendered at {size:.1f}pt",
+                                    page=page_no,
+                                ))
+    except Exception:                               # noqa: BLE001
+        # A file we cannot introspect is not a file we get to accuse.
+        return []
+    return found
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -188,8 +269,14 @@ def _quality(text: str, sections: dict, chunks: list[Chunk], engine: str) -> flo
 # Public API
 # ─────────────────────────────────────────────────────────────────────────────
 
-def extract(path: str | pathlib.Path, doc_id: str | None = None) -> ParsedDoc:
-    """Ingest one PDF. Never raises."""
+def extract(path: str | pathlib.Path, doc_id: str | None = None,
+            anonymise: bool = True) -> ParsedDoc:
+    """Ingest one PDF. Never raises.
+
+    `anonymise=False` is for the job description, which must reach the bias
+    detector intact — the gendered pronouns and school filters it hunts for are
+    the very strings redaction removes.
+    """
     path = pathlib.Path(path)
     doc_id = doc_id or path.stem
     warnings: list[str] = []
@@ -225,28 +312,55 @@ def extract(path: str | pathlib.Path, doc_id: str | None = None) -> ParsedDoc:
             text="", engine=engine, pages=pages, chars=0, quality=0.0, warnings=warnings,
         )
 
-    sections = segment(display)
+    name = _infer_name(doc_id, display)
+
+    # --- Blind screening, before anything is matched -------------------------
+    # Sections are found twice on purpose: once on the original so the
+    # EDUCATION-only rules know where they are, then again on the redacted text
+    # because the placeholders shift every offset after them. Chunk spans must
+    # index the text the engine actually reads, so that second pass is the real one.
+    hidden = find_hidden(path)
+    if anonymise and config.REDACT_BEFORE_SCORING:
+        redaction = blind.redact(display, name=name, sections=segment(display))
+        engine_text = redaction.text
+    else:
+        redaction = blind.RedactionReport(text=display)
+        engine_text = display
+
+    sections = segment(engine_text)
     if not sections:
         warnings.append("no section headers detected; using whole-document chunking")
 
-    chunks = normalizer.chunk_text(display, sections)
+    chunks = normalizer.chunk_text(engine_text, sections)
     if not chunks:
         warnings.append("no chunks above the minimum length; document may be near-empty")
 
-    quality = _quality(display, sections, chunks, engine)
+    contexts = context.annotate(chunks, engine_text) if config.CONTEXT_WEIGHTING_ENABLED else []
+
+    quality = _quality(engine_text, sections, chunks, engine)
     if quality < 0.5:
         warnings.append(f"low parse quality ({quality:.2f})")
 
+    if hidden:
+        warnings.append(
+            f"{len(hidden)} invisible text {'span' if len(hidden) == 1 else 'spans'} "
+            f"found in the PDF — possible ATS manipulation"
+        )
+
     return ParsedDoc(
         doc_id=doc_id,
-        name=_infer_name(doc_id, display),
+        name=name,
         filename=path.name,
-        text=display,
+        text=engine_text,
+        raw_text=display,
         chunks=chunks,
+        chunk_contexts=contexts,
         sections=sections,
+        redaction=redaction,
+        hidden=hidden,
         engine=engine,
         pages=pages,
-        chars=len(display),
+        chars=len(engine_text),
         quality=quality,
         warnings=warnings,
     )

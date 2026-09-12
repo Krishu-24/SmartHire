@@ -1,0 +1,76 @@
+{
+  "source": "github",
+  "handle": "snehak",
+  "url": "https://github.com/snehak",
+  "status": "ok",
+  "message": "synthetic fixture profile (no network call) \u2014 2 tutorial repositories; none of the claimed backend stack appears",
+  "skills": {
+    "html": [
+      {
+        "skill_id": "html",
+        "source": "github",
+        "kind": "language",
+        "where": "hello-world",
+        "detail": "HTML is 100% of the code"
+      }
+    ],
+    "css": [
+      {
+        "skill_id": "css",
+        "source": "github",
+        "kind": "language",
+        "where": "css-practice",
+        "detail": "CSS is 68% of the code"
+      }
+    ],
+    "git": [
+      {
+        "skill_id": "git",
+        "source": "github",
+        "kind": "file",
+        "where": "hello-world",
+        "detail": "repository contains .gitignore"
+      }
+    ]
+  },
+  "repos": [
+    {
+      "name": "hello-world",
+      "description": "First repository",
+      "url": "https://github.com/EXAMPLE/hello-world",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "HTML"
+      ],
+      "manifests": [],
+      "readme_skills": [
+        "html"
+      ],
+      "code_skills": [
+        "html"
+      ]
+    },
+    {
+      "name": "css-practice",
+      "description": "Tutorial exercises",
+      "url": "https://github.com/EXAMPLE/css-practice",
+      "stars": 0,
+      "pushed_at": "2024-02-11",
+      "languages": [
+        "CSS",
+        "HTML"
+      ],
+      "manifests": [],
+      "readme_skills": [
+        "css",
+        "html"
+      ],
+      "code_skills": [
+        "css",
+        "html"
+      ]
+    }
+  ],
+  "fetched_at": 0.0
+}

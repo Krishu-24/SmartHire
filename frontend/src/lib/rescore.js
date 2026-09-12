@@ -47,12 +47,17 @@ export function rescore(candidates, alpha, gate, meta) {
     const k = channelK(c.primitives, meta)
     const m = channelM(c.primitives, meta)
     const g = gateMultiplier(c.primitives, gate, meta)
+    // Whole-candidate integrity multiplier (today: the invisible-text penalty).
+    // Alpha-independent, computed server-side, but applied HERE as well as in
+    // fusion.score() — if the browser skipped it the slider would quietly hand a
+    // penalised candidate their points back.
+    const d = c.primitives.doc_multiplier ?? 1.0
     return {
       ...c,
       k_score: round(k, 4),
       m_score: round(m, 4),
       gate: round(g, 4),
-      score: round(100 * (a * k + (1 - a) * m) * g, 2),
+      score: round(100 * (a * k + (1 - a) * m) * g * d, 2),
     }
   })
 

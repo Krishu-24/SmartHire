@@ -1,0 +1,813 @@
+{
+  "_comment": "Explicit technology ontology. Every gazetteer skill hangs off a concept chain terminating at software-engineering, so any two skills have a lowest common ancestor and therefore a defensible distance. 'difficulty' is intrinsic to the skill (1 = a lookup table, 5 = a mental model). 'also' carries secondary edges for skills that genuinely belong to two families. 'bridges' pins named ramp-up estimates so a taxonomy edit cannot silently move them.",
+  "concepts": {
+    "software-engineering": {
+      "label": "Software Engineering",
+      "parent": null
+    },
+    "programming-languages": {
+      "label": "Programming Languages",
+      "parent": "software-engineering"
+    },
+    "scripting-languages": {
+      "label": "Dynamic / Scripting Languages",
+      "parent": "programming-languages"
+    },
+    "compiled-languages": {
+      "label": "Static / Compiled Languages",
+      "parent": "programming-languages"
+    },
+    "cs-fundamentals": {
+      "label": "Computer Science Fundamentals",
+      "parent": "programming-languages"
+    },
+    "frontend": {
+      "label": "Frontend Engineering",
+      "parent": "software-engineering"
+    },
+    "web-markup": {
+      "label": "Markup & Styling",
+      "parent": "frontend"
+    },
+    "css-frameworks": {
+      "label": "CSS Frameworks",
+      "parent": "web-markup"
+    },
+    "js-ui-frameworks": {
+      "label": "JavaScript UI Frameworks",
+      "parent": "frontend"
+    },
+    "state-management": {
+      "label": "Client State Management",
+      "parent": "js-ui-frameworks"
+    },
+    "legacy-dom": {
+      "label": "Imperative DOM Libraries",
+      "parent": "frontend"
+    },
+    "build-tooling": {
+      "label": "Frontend Build Tooling",
+      "parent": "frontend"
+    },
+    "design": {
+      "label": "Product Design",
+      "parent": "software-engineering"
+    },
+    "interface-design": {
+      "label": "Interface & Interaction Design",
+      "parent": "design"
+    },
+    "backend": {
+      "label": "Backend Engineering",
+      "parent": "software-engineering"
+    },
+    "api-design": {
+      "label": "API Design",
+      "parent": "backend"
+    },
+    "js-backend": {
+      "label": "JavaScript Backend",
+      "parent": "backend"
+    },
+    "python-backend": {
+      "label": "Python Backend",
+      "parent": "backend"
+    },
+    "jvm-dotnet-backend": {
+      "label": "JVM / .NET Backend",
+      "parent": "backend"
+    },
+    "auth-security": {
+      "label": "Authentication & Request Security",
+      "parent": "backend"
+    },
+    "distributed-systems": {
+      "label": "Distributed Systems & Architecture",
+      "parent": "backend"
+    },
+    "data-persistence": {
+      "label": "Data Persistence",
+      "parent": "software-engineering"
+    },
+    "relational-db": {
+      "label": "Relational Databases",
+      "parent": "data-persistence"
+    },
+    "document-db": {
+      "label": "Document & BaaS Stores",
+      "parent": "data-persistence"
+    },
+    "kv-cache": {
+      "label": "Key-Value & Caching Stores",
+      "parent": "data-persistence"
+    },
+    "search-engines": {
+      "label": "Search Engines",
+      "parent": "data-persistence"
+    },
+    "data-access-layer": {
+      "label": "Data Access Layer",
+      "parent": "data-persistence"
+    },
+    "devops": {
+      "label": "DevOps & Infrastructure",
+      "parent": "software-engineering"
+    },
+    "version-control": {
+      "label": "Version Control & Collaboration",
+      "parent": "devops"
+    },
+    "containers": {
+      "label": "Containerisation & Orchestration",
+      "parent": "devops"
+    },
+    "cloud-platforms": {
+      "label": "Cloud Platforms",
+      "parent": "devops"
+    },
+    "automation": {
+      "label": "Automation & Infrastructure as Code",
+      "parent": "devops"
+    },
+    "systems-admin": {
+      "label": "Systems & Operations",
+      "parent": "devops"
+    },
+    "quality": {
+      "label": "Engineering Quality",
+      "parent": "software-engineering"
+    },
+    "testing-practice": {
+      "label": "Automated Testing",
+      "parent": "quality"
+    },
+    "data-science": {
+      "label": "Data & Machine Learning",
+      "parent": "software-engineering"
+    },
+    "data-tooling": {
+      "label": "Data Analysis Tooling",
+      "parent": "data-science"
+    },
+    "machine-learning": {
+      "label": "Machine Learning",
+      "parent": "data-science"
+    },
+    "mobile": {
+      "label": "Mobile Engineering",
+      "parent": "software-engineering"
+    },
+    "native-mobile": {
+      "label": "Native Mobile",
+      "parent": "mobile"
+    },
+    "cross-platform-mobile": {
+      "label": "Cross-Platform Mobile",
+      "parent": "mobile"
+    },
+    "process": {
+      "label": "Ways of Working",
+      "parent": "software-engineering"
+    }
+  },
+  "skills": {
+    ".net": {
+      "parent": "jvm-dotnet-backend",
+      "difficulty": 3,
+      "also": [
+        "c#"
+      ]
+    },
+    "accessibility": {
+      "parent": "web-markup",
+      "difficulty": 3,
+      "also": [
+        "html"
+      ]
+    },
+    "agile": {
+      "parent": "process",
+      "difficulty": 1,
+      "also": []
+    },
+    "android": {
+      "parent": "native-mobile",
+      "difficulty": 4,
+      "also": [
+        "kotlin"
+      ]
+    },
+    "angular": {
+      "parent": "js-ui-frameworks",
+      "difficulty": 4,
+      "also": [
+        "typescript"
+      ]
+    },
+    "authentication": {
+      "parent": "auth-security",
+      "difficulty": 3,
+      "also": []
+    },
+    "aws": {
+      "parent": "cloud-platforms",
+      "difficulty": 4,
+      "also": []
+    },
+    "azure": {
+      "parent": "cloud-platforms",
+      "difficulty": 4,
+      "also": []
+    },
+    "backend": {
+      "parent": "backend",
+      "difficulty": 3,
+      "also": []
+    },
+    "bootstrap": {
+      "parent": "css-frameworks",
+      "difficulty": 1,
+      "also": [
+        "css"
+      ]
+    },
+    "c#": {
+      "parent": "compiled-languages",
+      "difficulty": 3,
+      "also": []
+    },
+    "c++": {
+      "parent": "compiled-languages",
+      "difficulty": 4,
+      "also": []
+    },
+    "celery": {
+      "parent": "python-backend",
+      "difficulty": 3,
+      "also": [
+        "python"
+      ]
+    },
+    "ci/cd": {
+      "parent": "automation",
+      "difficulty": 3,
+      "also": [
+        "git"
+      ]
+    },
+    "code review": {
+      "parent": "version-control",
+      "difficulty": 2,
+      "also": [
+        "git"
+      ]
+    },
+    "css": {
+      "parent": "web-markup",
+      "difficulty": 2,
+      "also": []
+    },
+    "cypress": {
+      "parent": "testing-practice",
+      "difficulty": 2,
+      "also": [
+        "testing"
+      ]
+    },
+    "data analysis": {
+      "parent": "data-tooling",
+      "difficulty": 3,
+      "also": []
+    },
+    "data structures": {
+      "parent": "cs-fundamentals",
+      "difficulty": 4,
+      "also": []
+    },
+    "debugging": {
+      "parent": "cs-fundamentals",
+      "difficulty": 2,
+      "also": []
+    },
+    "deep learning": {
+      "parent": "machine-learning",
+      "difficulty": 5,
+      "also": [
+        "machine learning"
+      ]
+    },
+    "django": {
+      "parent": "python-backend",
+      "difficulty": 3,
+      "also": [
+        "python"
+      ]
+    },
+    "docker": {
+      "parent": "containers",
+      "difficulty": 3,
+      "also": [
+        "linux"
+      ]
+    },
+    "elasticsearch": {
+      "parent": "search-engines",
+      "difficulty": 3,
+      "also": []
+    },
+    "express": {
+      "parent": "js-backend",
+      "difficulty": 2,
+      "also": [
+        "node.js"
+      ]
+    },
+    "fastapi": {
+      "parent": "python-backend",
+      "difficulty": 2,
+      "also": [
+        "python"
+      ]
+    },
+    "figma": {
+      "parent": "interface-design",
+      "difficulty": 1,
+      "also": [
+        "ui"
+      ]
+    },
+    "firebase": {
+      "parent": "document-db",
+      "difficulty": 2,
+      "also": []
+    },
+    "flask": {
+      "parent": "python-backend",
+      "difficulty": 2,
+      "also": [
+        "python"
+      ]
+    },
+    "frontend": {
+      "parent": "frontend",
+      "difficulty": 3,
+      "also": []
+    },
+    "full stack": {
+      "parent": "software-engineering",
+      "difficulty": 4,
+      "also": []
+    },
+    "gcp": {
+      "parent": "cloud-platforms",
+      "difficulty": 4,
+      "also": []
+    },
+    "git": {
+      "parent": "version-control",
+      "difficulty": 2,
+      "also": []
+    },
+    "go": {
+      "parent": "compiled-languages",
+      "difficulty": 3,
+      "also": []
+    },
+    "graphql": {
+      "parent": "api-design",
+      "difficulty": 3,
+      "also": [
+        "rest api"
+      ]
+    },
+    "html": {
+      "parent": "web-markup",
+      "difficulty": 1,
+      "also": []
+    },
+    "ios": {
+      "parent": "native-mobile",
+      "difficulty": 4,
+      "also": [
+        "swift"
+      ]
+    },
+    "java": {
+      "parent": "compiled-languages",
+      "difficulty": 3,
+      "also": []
+    },
+    "javascript": {
+      "parent": "scripting-languages",
+      "difficulty": 3,
+      "also": [
+        "web-markup"
+      ]
+    },
+    "jest": {
+      "parent": "testing-practice",
+      "difficulty": 2,
+      "also": [
+        "javascript",
+        "testing"
+      ]
+    },
+    "jquery": {
+      "parent": "legacy-dom",
+      "difficulty": 1,
+      "also": [
+        "javascript"
+      ]
+    },
+    "junit": {
+      "parent": "testing-practice",
+      "difficulty": 2,
+      "also": [
+        "java",
+        "testing"
+      ]
+    },
+    "jwt": {
+      "parent": "auth-security",
+      "difficulty": 2,
+      "also": [
+        "rest api"
+      ]
+    },
+    "kotlin": {
+      "parent": "compiled-languages",
+      "difficulty": 3,
+      "also": [
+        "java",
+        "native-mobile"
+      ]
+    },
+    "kubernetes": {
+      "parent": "containers",
+      "difficulty": 5,
+      "also": [
+        "docker"
+      ]
+    },
+    "linux": {
+      "parent": "systems-admin",
+      "difficulty": 3,
+      "also": []
+    },
+    "machine learning": {
+      "parent": "machine-learning",
+      "difficulty": 5,
+      "also": [
+        "python"
+      ]
+    },
+    "microservices": {
+      "parent": "distributed-systems",
+      "difficulty": 4,
+      "also": [
+        "rest api"
+      ]
+    },
+    "middleware": {
+      "parent": "auth-security",
+      "difficulty": 2,
+      "also": [
+        "rest api"
+      ]
+    },
+    "mongodb": {
+      "parent": "document-db",
+      "difficulty": 2,
+      "also": []
+    },
+    "mongoose": {
+      "parent": "document-db",
+      "difficulty": 1,
+      "also": [
+        "mongodb",
+        "node.js"
+      ]
+    },
+    "monitoring": {
+      "parent": "systems-admin",
+      "difficulty": 3,
+      "also": []
+    },
+    "mysql": {
+      "parent": "relational-db",
+      "difficulty": 2,
+      "also": [
+        "sql"
+      ]
+    },
+    "next.js": {
+      "parent": "js-ui-frameworks",
+      "difficulty": 3,
+      "also": [
+        "react"
+      ]
+    },
+    "nginx": {
+      "parent": "systems-admin",
+      "difficulty": 3,
+      "also": [
+        "linux"
+      ]
+    },
+    "node.js": {
+      "parent": "js-backend",
+      "difficulty": 3,
+      "also": [
+        "javascript"
+      ]
+    },
+    "oop": {
+      "parent": "cs-fundamentals",
+      "difficulty": 3,
+      "also": []
+    },
+    "oracle": {
+      "parent": "relational-db",
+      "difficulty": 3,
+      "also": [
+        "sql"
+      ]
+    },
+    "orm": {
+      "parent": "data-access-layer",
+      "difficulty": 2,
+      "also": [
+        "sql"
+      ]
+    },
+    "pandas": {
+      "parent": "data-tooling",
+      "difficulty": 2,
+      "also": [
+        "python"
+      ]
+    },
+    "performance": {
+      "parent": "cs-fundamentals",
+      "difficulty": 4,
+      "also": []
+    },
+    "php": {
+      "parent": "scripting-languages",
+      "difficulty": 2,
+      "also": []
+    },
+    "postgresql": {
+      "parent": "relational-db",
+      "difficulty": 2,
+      "also": [
+        "sql"
+      ]
+    },
+    "pytest": {
+      "parent": "testing-practice",
+      "difficulty": 2,
+      "also": [
+        "python",
+        "testing"
+      ]
+    },
+    "python": {
+      "parent": "scripting-languages",
+      "difficulty": 2,
+      "also": []
+    },
+    "react": {
+      "parent": "js-ui-frameworks",
+      "difficulty": 3,
+      "also": [
+        "javascript"
+      ]
+    },
+    "react native": {
+      "parent": "cross-platform-mobile",
+      "difficulty": 3,
+      "also": [
+        "react"
+      ]
+    },
+    "redis": {
+      "parent": "kv-cache",
+      "difficulty": 2,
+      "also": []
+    },
+    "redux": {
+      "parent": "state-management",
+      "difficulty": 3,
+      "also": [
+        "react"
+      ]
+    },
+    "responsive design": {
+      "parent": "web-markup",
+      "difficulty": 2,
+      "also": [
+        "css"
+      ]
+    },
+    "rest api": {
+      "parent": "api-design",
+      "difficulty": 2,
+      "also": []
+    },
+    "ruby": {
+      "parent": "scripting-languages",
+      "difficulty": 2,
+      "also": []
+    },
+    "sass": {
+      "parent": "web-markup",
+      "difficulty": 1,
+      "also": [
+        "css"
+      ]
+    },
+    "spring boot": {
+      "parent": "jvm-dotnet-backend",
+      "difficulty": 4,
+      "also": [
+        "java"
+      ]
+    },
+    "sql": {
+      "parent": "relational-db",
+      "difficulty": 2,
+      "also": []
+    },
+    "sql server": {
+      "parent": "relational-db",
+      "difficulty": 2,
+      "also": [
+        "sql"
+      ]
+    },
+    "sqlite": {
+      "parent": "relational-db",
+      "difficulty": 1,
+      "also": [
+        "sql"
+      ]
+    },
+    "svelte": {
+      "parent": "js-ui-frameworks",
+      "difficulty": 2,
+      "also": [
+        "javascript"
+      ]
+    },
+    "swift": {
+      "parent": "compiled-languages",
+      "difficulty": 3,
+      "also": [
+        "native-mobile"
+      ]
+    },
+    "system design": {
+      "parent": "distributed-systems",
+      "difficulty": 5,
+      "also": []
+    },
+    "tailwind": {
+      "parent": "css-frameworks",
+      "difficulty": 1,
+      "also": [
+        "css"
+      ]
+    },
+    "terraform": {
+      "parent": "automation",
+      "difficulty": 4,
+      "also": [
+        "cloud-platforms"
+      ]
+    },
+    "testing": {
+      "parent": "testing-practice",
+      "difficulty": 3,
+      "also": []
+    },
+    "typescript": {
+      "parent": "compiled-languages",
+      "difficulty": 2,
+      "also": [
+        "javascript"
+      ]
+    },
+    "ui": {
+      "parent": "interface-design",
+      "difficulty": 2,
+      "also": []
+    },
+    "ux": {
+      "parent": "interface-design",
+      "difficulty": 3,
+      "also": []
+    },
+    "vue": {
+      "parent": "js-ui-frameworks",
+      "difficulty": 3,
+      "also": [
+        "javascript"
+      ]
+    },
+    "webpack": {
+      "parent": "build-tooling",
+      "difficulty": 3,
+      "also": [
+        "javascript"
+      ]
+    },
+    "websockets": {
+      "parent": "api-design",
+      "difficulty": 3,
+      "also": [
+        "rest api"
+      ]
+    }
+  },
+  "bridges": [
+    {
+      "from": "react",
+      "to": "vue",
+      "weeks": 1.0,
+      "note": "Same component model, same reactivity idea, different template syntax."
+    },
+    {
+      "from": "vue",
+      "to": "react",
+      "weeks": 1.0,
+      "note": "Same component model; JSX replaces the template block."
+    },
+    {
+      "from": "react",
+      "to": "svelte",
+      "weeks": 1.0,
+      "note": "Component thinking transfers; the compiler removes the hook rules."
+    },
+    {
+      "from": "react",
+      "to": "angular",
+      "weeks": 3.0,
+      "note": "Component thinking transfers, but DI, RxJS and decorators are new."
+    },
+    {
+      "from": "python",
+      "to": "node.js",
+      "weeks": 2.5,
+      "note": "Language is familiar ground; the event loop and async I/O model are not."
+    },
+    {
+      "from": "java",
+      "to": "node.js",
+      "weeks": 3.0,
+      "note": "Server concepts transfer; dynamic typing and the event loop are the adjustment."
+    },
+    {
+      "from": "python",
+      "to": "go",
+      "weeks": 3.0,
+      "note": "Static types, explicit error handling and goroutines are genuinely new."
+    },
+    {
+      "from": "mysql",
+      "to": "postgresql",
+      "weeks": 0.5,
+      "note": "Same relational model and near-identical SQL surface."
+    },
+    {
+      "from": "docker",
+      "to": "kubernetes",
+      "weeks": 4.0,
+      "note": "Containers are the prerequisite, not the skill - scheduling is the new part."
+    },
+    {
+      "from": "javascript",
+      "to": "typescript",
+      "weeks": 1.5,
+      "note": "Same runtime; the work is learning the type system, not the language."
+    },
+    {
+      "from": "express",
+      "to": "fastapi",
+      "weeks": 1.5,
+      "note": "Identical routing and middleware concepts in a different language."
+    },
+    {
+      "from": "flask",
+      "to": "fastapi",
+      "weeks": 0.5,
+      "note": "Same WSGI-era mental model plus type hints and async."
+    },
+    {
+      "from": "rest api",
+      "to": "graphql",
+      "weeks": 2.0,
+      "note": "API thinking transfers; the schema-and-resolver model is the new part."
+    }
+  ]
+}

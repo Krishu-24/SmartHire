@@ -1,0 +1,202 @@
+{
+  "_comment": "Interview probes, portfolio project ideas and first steps, per skill. 'clusters' is the fallback used when a skill has no bespoke entry, so every skill in the gazetteer yields role-appropriate content. Probes are written to be unanswerable from the resume alone: they ask how, not whether.",
+  "clusters": {
+    "Frontend": {
+      "probe": "Walk me through a component you built that turned out harder than expected. What made it hard?",
+      "project": "Rebuild one screen of a product you use, matching its behaviour on mobile and desktop.",
+      "first_step": "Ship one small interface and get it working on a phone as well as a laptop."
+    },
+    "Backend": {
+      "probe": "Take an endpoint you have written and walk me through what happens between the request arriving and the response leaving.",
+      "project": "Build a small API with authentication, persistence and a documented set of endpoints.",
+      "first_step": "Build one CRUD API end to end and document its endpoints in the README."
+    },
+    "Database": {
+      "probe": "Describe a schema you designed. What would you change about it now?",
+      "project": "Model a real domain (bookings, inventory, a library) and write the queries the app would need.",
+      "first_step": "Design one schema with at least three related tables and write the joins yourself."
+    },
+    "DevOps": {
+      "probe": "How does your code get from your laptop to somewhere another person can use it?",
+      "project": "Take an existing project of yours and give it a reproducible deployment and an automated build.",
+      "first_step": "Containerise one project you have already built and deploy it somewhere public."
+    },
+    "Fundamentals": {
+      "probe": "Tell me about a bug that took you more than a day. How did you find it?",
+      "project": "Solve a problem end to end in an unfamiliar language and write up what transferred.",
+      "first_step": "Work through a structured problem set and write up your reasoning, not just the answer."
+    },
+    "Data": {
+      "probe": "Describe a dataset you worked with. What was wrong with it?",
+      "project": "Take a messy public dataset, clean it, and publish the analysis with its caveats stated.",
+      "first_step": "Clean one real dataset and write up what you had to decide."
+    },
+    "Mobile": {
+      "probe": "What did you have to do differently building for a phone rather than a browser?",
+      "project": "Ship a small app that works offline and syncs when a connection returns.",
+      "first_step": "Build one screen that behaves correctly with no network."
+    },
+    "Design": {
+      "probe": "Show me something you designed and tell me what you changed after someone used it.",
+      "project": "Redesign a flow you find frustrating and document the reasoning behind each change.",
+      "first_step": "Redesign one screen and write a paragraph on why each change helps."
+    },
+    "Other": {
+      "probe": "Tell me about a project where you used this, and what you would do differently.",
+      "project": "Build something small that genuinely requires this skill, and document the decisions.",
+      "first_step": "Use it once in a real project rather than a tutorial."
+    }
+  },
+  "skills": {
+    "accessibility": {
+      "probe": "How would someone using a keyboard only get through your main flow?",
+      "project": "Audit a project with a screen reader and fix what you find.",
+      "first_step": "Make one flow fully keyboard-navigable and fix its contrast."
+    },
+    "agile": {
+      "probe": "How did your team decide what to build next, and what happened when that turned out wrong?",
+      "project": "Run a project in short iterations with a written backlog and a retrospective.",
+      "first_step": "Plan your next project in week-long iterations and write down what slipped."
+    },
+    "authentication": {
+      "probe": "Walk me through what happens from a user typing a password to them being logged in.",
+      "project": "Implement sign-up, login, password reset and session expiry properly in one app.",
+      "first_step": "Add real authentication to a project instead of a hardcoded user."
+    },
+    "aws": {
+      "probe": "Where does your project run right now, and what would you need to change to run it for real users?",
+      "project": "Deploy a project with managed storage, a database and environment-based configuration.",
+      "first_step": "Deploy one finished project to a cloud provider rather than a laptop."
+    },
+    "ci/cd": {
+      "probe": "What runs automatically when you push? What would you want to run that does not?",
+      "project": "Add a pipeline that runs tests and blocks a merge when they fail.",
+      "first_step": "Add a GitHub Actions workflow that runs your tests on every push."
+    },
+    "data structures": {
+      "probe": "Tell me about a time you chose one data structure over another. What did it cost?",
+      "project": "Implement a structure from scratch and use it in something real.",
+      "first_step": "Re-solve three problems you have already solved, optimising for complexity."
+    },
+    "docker": {
+      "probe": "Describe how you would containerise the backend you built. What goes in the image, what stays outside it, and why?",
+      "project": "Containerise an existing project of yours: a Dockerfile, a compose file for its database, and a README showing a one-command start.",
+      "first_step": "Write a Dockerfile for a project you have already finished and get it running locally."
+    },
+    "express": {
+      "probe": "Explain what middleware is doing in a request you have handled. What would break without it?",
+      "project": "Build an API where auth, logging and validation are each their own middleware layer.",
+      "first_step": "Add authentication middleware to an API you have already built."
+    },
+    "git": {
+      "probe": "Describe a time your branch conflicted badly with someone else's. What did you do?",
+      "project": "Work through a project using branches and pull requests even while working alone.",
+      "first_step": "Use feature branches and PRs on your next project rather than committing to main."
+    },
+    "graphql": {
+      "probe": "What does GraphQL make easier for the client, and what does it move onto the server?",
+      "project": "Put a GraphQL layer over an API you already have and handle the N+1 problem it creates.",
+      "first_step": "Expose one existing REST resource through a GraphQL schema."
+    },
+    "jest": {
+      "probe": "How do you test a component that fetches data? What do you replace, and what do you leave real?",
+      "project": "Add a test suite covering behaviour rather than implementation, and run it in CI.",
+      "first_step": "Write tests for one component, including its loading and error states."
+    },
+    "jwt": {
+      "probe": "Where do you store a token in the browser, and what attack does each choice expose you to?",
+      "project": "Build auth with short-lived tokens, refresh, and a working logout.",
+      "first_step": "Add token-based auth to an existing API, including expiry."
+    },
+    "kubernetes": {
+      "probe": "You have a container that runs. What problems appear when you need three of them behind one address?",
+      "project": "Deploy a two-service app to a local cluster with health checks and a rolling update.",
+      "first_step": "Run a single-service deployment locally and practise updating it without downtime."
+    },
+    "linux": {
+      "probe": "Your service is running but not responding. What do you check, in what order?",
+      "project": "Set up a server yourself: user, firewall, reverse proxy, service manager, logs.",
+      "first_step": "Deploy a project to a bare VM rather than a managed platform."
+    },
+    "machine learning": {
+      "probe": "How did you know your model was actually working, rather than memorising?",
+      "project": "Take a problem end to end: data, baseline, model, evaluation, and an honest write-up of the limits.",
+      "first_step": "Build a baseline model and beat it, documenting both."
+    },
+    "microservices": {
+      "probe": "What would you split out of your current project first, and what new problem would that create?",
+      "project": "Split one project into two services that communicate, and handle one of them being down.",
+      "first_step": "Extract one responsibility from a monolith into its own service."
+    },
+    "mongodb": {
+      "probe": "What did you denormalise, and what did that cost you later?",
+      "project": "Build an app whose read patterns genuinely justify a document store, and say why in the README.",
+      "first_step": "Model one feature in a document store and write the queries the screens need."
+    },
+    "node.js": {
+      "probe": "Your API makes two slow calls to other services. How would you handle that, and what happens to other requests meanwhile?",
+      "project": "Build a REST API with routing, middleware, auth and tests, and document its endpoints.",
+      "first_step": "Port a small script you have written into an HTTP service with two or three endpoints."
+    },
+    "pandas": {
+      "probe": "Describe the messiest data you have had to clean. What did you have to decide?",
+      "project": "Build a reproducible pipeline from raw data to a published result.",
+      "first_step": "Clean one real dataset and document every judgement call."
+    },
+    "postgresql": {
+      "probe": "Describe a query that was slow. How did you work out why?",
+      "project": "Build a schema with real constraints and foreign keys, then add the indexes your queries need.",
+      "first_step": "Move a project off a document store onto Postgres and write the migrations."
+    },
+    "pytest": {
+      "probe": "How would you test code that talks to a database without making the tests slow and flaky?",
+      "project": "Build a project with fixtures, parameterised tests and a CI run.",
+      "first_step": "Add pytest to an existing script and cover its edge cases."
+    },
+    "react": {
+      "probe": "Describe a piece of state in your app that was hard to place. Where did it end up, and why there?",
+      "project": "Build an interface with real data-fetching states: loading, empty, error and success.",
+      "first_step": "Rebuild a static page as components with real state, not just props."
+    },
+    "redis": {
+      "probe": "What in your app would you cache, and how would you know when the cache is wrong?",
+      "project": "Add caching to a slow endpoint and measure the difference honestly.",
+      "first_step": "Cache one expensive query and handle invalidating it."
+    },
+    "responsive design": {
+      "probe": "How do you decide where a layout should break? What do you test on?",
+      "project": "Take a desktop-only project of yours and make it genuinely usable on a phone.",
+      "first_step": "Fix one existing page so it works at 375px wide."
+    },
+    "rest api": {
+      "probe": "How did you decide what your endpoints were called and what they returned?",
+      "project": "Design and build an API with versioning, pagination and honest error responses.",
+      "first_step": "Document an existing API of yours properly, including its error cases."
+    },
+    "sql": {
+      "probe": "Write me the shape of a query joining three tables \u2014 what order would you filter in, and why?",
+      "project": "Take a dataset and answer five real questions about it in SQL alone.",
+      "first_step": "Practise joins and aggregation against a real dataset rather than a tutorial schema."
+    },
+    "system design": {
+      "probe": "Your app now has a hundred times the traffic. What breaks first, and how would you know?",
+      "project": "Write up the architecture of something you built, and what you would change at ten times the scale.",
+      "first_step": "Document the architecture of your largest project, including its bottlenecks."
+    },
+    "testing": {
+      "probe": "What in your project is hardest to test, and why?",
+      "project": "Take an untested project of yours to meaningful coverage, starting with the parts you most fear changing.",
+      "first_step": "Write tests for the one function you are most afraid to edit."
+    },
+    "typescript": {
+      "probe": "Show me a type you wrote that caught a real bug. What would the JavaScript version have done?",
+      "project": "Convert an existing JavaScript project to TypeScript and remove every `any` you add on the way.",
+      "first_step": "Add TypeScript to one existing project and type its API responses properly."
+    },
+    "vue": {
+      "probe": "How would you structure a form with validation that also needs to warn before discarding changes?",
+      "project": "Build a small single-page app with routing, a shared store and a real API behind it.",
+      "first_step": "Rebuild a React or vanilla project you already have in Vue and note what transferred."
+    }
+  }
+}

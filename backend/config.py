@@ -139,7 +139,102 @@ SECTION_FUZZ_THRESHOLD = 85     # RapidFuzz cutoff for section header matching
 MIN_CHUNK_CHARS = 25            # shorter fragments carry no usable signal
 
 
+# ─── Context weighting: recency and depth ────────────────────────────────────
+# Where a skill appears is evidence about how well it is held. A tool driven in a
+# recent internship is not the same claim as the same word sitting in a
+# comma-separated list, and the engine should not read them as equal.
+#
+# These multiply the LEXICAL evidence only. The semantic channel already reads
+# surrounding prose, so it prices context on its own; applying the multiplier
+# there too would charge a candidate twice for one weakness.
+CONTEXT_WEIGHTING_ENABLED = True
+
+# Section credibility. A claim inside worked evidence outranks a claim inside a
+# self-reported inventory.
+SECTION_CONTEXT_WEIGHT = {
+    "EXPERIENCE": 1.00,
+    "PROJECTS": 0.95,
+    "ACHIEVEMENTS": 0.85,
+    "SUMMARY": 0.70,
+    "CERTIFICATIONS": 0.70,
+    "EDUCATION": 0.60,      # coursework is exposure, not practice
+    "SKILLS": 0.55,         # the self-declared inventory
+    "INTERESTS": 0.40,
+    "UNKNOWN": 0.75,        # un-sectioned resume: don't punish a layout we failed to read
+}
+
+# A bare tag in a delimited list carries no context at all. Detected by the shape
+# of the line, not by section, so a comma-run inside PROJECTS is caught too.
+BARE_LIST_PENALTY = 0.75        # multiplies the section weight
+BARE_LIST_MIN_ITEMS = 4         # "React, Node, SQL, Docker" is a list; "React and Node" is a sentence
+BARE_LIST_MAX_VERBS = 0         # a line with a verb is a sentence, however many commas it has
+
+# Recency decay, applied when a chunk carries or inherits a year.
+RECENCY_FULL_MONTHS = 12        # inside a year: no decay at all
+RECENCY_FLOOR = 0.55            # a very old mention never falls below this
+RECENCY_HALFLIFE_MONTHS = 30    # months for the decayable part to halve
+CURRENT_YEAR_FALLBACK = 2026    # used only when no date anywhere in the document
+
+
+# ─── Integrity: keyword stuffing and unsupported claims ──────────────────────
+# A skill named in the inventory but absent from every piece of worked evidence
+# is a claim with nothing behind it. We discount it rather than delete it — the
+# resume may simply be terse — and say so on screen.
+INTEGRITY_ENABLED = True
+ORPHAN_SKILL_PENALTY = 0.55     # multiplies lexical evidence for an unsupported claim
+ORPHAN_FLAG_MIN_COUNT = 3       # this many orphans before the pool-level warning fires
+ORPHAN_FLAG_MIN_RATIO = 0.45    # ...or this share of all named skills
+
+# Invisible text: white-on-white keyword dumps and sub-legible font sizes.
+HIDDEN_TEXT_MIN_LUMA = 0.93     # luma above this on a white page is effectively invisible
+HIDDEN_TEXT_MIN_SIZE = 4.0      # points; below this nothing is meant to be read
+HIDDEN_TEXT_PENALTY = 0.40      # multiplies the whole candidate's score — deliberately severe
+
+
+# ─── External profile evidence ───────────────────────────────────────────────
+# Off by default: the demo must never depend on a network. Enable per request.
+ENRICHMENT_ENABLED_DEFAULT = False
+ENRICHMENT_CACHE = ROOT / ".cache" / "profiles"
+ENRICHMENT_TIMEOUT = 6.0        # seconds per HTTP call
+ENRICHMENT_MAX_REPOS = 12       # newest-pushed repos to inspect per candidate
+ENRICHMENT_MAX_WORKERS = 4
+
+GITHUB_API = "https://api.github.com"
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")   # optional; lifts the rate limit
+
+# Code is the strongest evidence there is: it was executed, not typed into a CV.
+# A skill proven by a dependency manifest is worth more than one merely written down.
+GITHUB_EVIDENCE_WEIGHT = 1.00
+GITHUB_SCORE_MULTIPLIER = 1.35  # applied to lexical evidence corroborated by code
+
+# LinkedIn is self-reported and unverifiable, so it may support a claim and never
+# make one on its own.
+LINKEDIN_EVIDENCE_WEIGHT = 0.35
+LINKEDIN_SCORE_MULTIPLIER = 1.08
+
+# Claim verification: resume says it, the code does not.
+VERIFY_CONTRADICTION_PENALTY = 0.50   # multiplies lexical evidence for a contradicted claim
+VERIFY_MIN_REPOS = 2                  # below this, absence proves nothing and we stay silent
+VERIFY_CORROBORATION_BONUS = 0.15     # added to req_coverage-weighted trust, capped at 1.0
+
+
+# ─── Blind screening ─────────────────────────────────────────────────────────
+# PII is stripped from the text the engine matches on, always — it carries no
+# skill signal, so there is no cost to removing it and a real fairness gain.
+# The toggle controls only whether the recruiter can SEE identity.
+REDACT_BEFORE_SCORING = True
+BLIND_MODE_DEFAULT = False
+
+
+# ─── Ramp-up estimation ──────────────────────────────────────────────────────
+RAMPUP_TOP_N = 3                # the brief asks for the top 3
+RAMPUP_MAX_GAPS = 5             # gaps reported per candidate, worst first
+
+
 # ─── Data files ──────────────────────────────────────────────────────────────
 GAZETTEER_PATH = DATA / "skill_gazetteer.json"
 ALIAS_PATH = DATA / "alias_map.json"
 BIAS_LEXICON_PATH = DATA / "bias_lexicon.json"
+TAXONOMY_PATH = DATA / "taxonomy.json"
+COACHING_PATH = DATA / "coaching.json"
+LIBRARY_MAP_PATH = DATA / "library_map.json"

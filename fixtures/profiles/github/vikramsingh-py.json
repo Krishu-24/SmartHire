@@ -1,0 +1,160 @@
+{
+  "source": "github",
+  "handle": "vikramsingh-py",
+  "url": "https://github.com/vikramsingh-py",
+  "status": "ok",
+  "message": "synthetic fixture profile (no network call) \u2014 2 repositories, Python backend stack proven end to end",
+  "skills": {
+    "python": [
+      {
+        "skill_id": "python",
+        "source": "github",
+        "kind": "language",
+        "where": "partner-portal",
+        "detail": "Python is 88% of the code"
+      }
+    ],
+    "django": [
+      {
+        "skill_id": "django",
+        "source": "github",
+        "kind": "dependency",
+        "where": "partner-portal",
+        "detail": "depends on `djangorestframework` in requirements.txt"
+      }
+    ],
+    "postgresql": [
+      {
+        "skill_id": "postgresql",
+        "source": "github",
+        "kind": "dependency",
+        "where": "partner-portal",
+        "detail": "depends on `psycopg2-binary` in requirements.txt"
+      }
+    ],
+    "celery": [
+      {
+        "skill_id": "celery",
+        "source": "github",
+        "kind": "dependency",
+        "where": "partner-portal",
+        "detail": "depends on `celery` in requirements.txt"
+      }
+    ],
+    "redis": [
+      {
+        "skill_id": "redis",
+        "source": "github",
+        "kind": "dependency",
+        "where": "partner-portal",
+        "detail": "depends on `redis` in requirements.txt"
+      }
+    ],
+    "docker": [
+      {
+        "skill_id": "docker",
+        "source": "github",
+        "kind": "file",
+        "where": "partner-portal",
+        "detail": "repository contains Dockerfile"
+      }
+    ],
+    "rest api": [
+      {
+        "skill_id": "rest api",
+        "source": "github",
+        "kind": "dependency",
+        "where": "partner-portal",
+        "detail": "depends on `requests` in requirements.txt"
+      }
+    ],
+    "pandas": [
+      {
+        "skill_id": "pandas",
+        "source": "github",
+        "kind": "dependency",
+        "where": "etl-jobs",
+        "detail": "depends on `pandas` in requirements.txt"
+      }
+    ],
+    "pytest": [
+      {
+        "skill_id": "pytest",
+        "source": "github",
+        "kind": "dependency",
+        "where": "etl-jobs",
+        "detail": "depends on `pytest` in requirements.txt"
+      }
+    ],
+    "git": [
+      {
+        "skill_id": "git",
+        "source": "github",
+        "kind": "file",
+        "where": "partner-portal",
+        "detail": "repository contains .gitignore"
+      }
+    ]
+  },
+  "repos": [
+    {
+      "name": "partner-portal",
+      "description": "Django REST backend for a partner portal",
+      "url": "https://github.com/EXAMPLE/partner-portal",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "Python",
+        "HTML"
+      ],
+      "manifests": [
+        "requirements.txt",
+        "Dockerfile"
+      ],
+      "readme_skills": [
+        "python",
+        "django",
+        "postgresql",
+        "celery",
+        "redis",
+        "docker",
+        "rest api"
+      ],
+      "code_skills": [
+        "python",
+        "django",
+        "postgresql",
+        "celery",
+        "redis",
+        "docker",
+        "rest api"
+      ]
+    },
+    {
+      "name": "etl-jobs",
+      "description": "Scheduled data jobs",
+      "url": "https://github.com/EXAMPLE/etl-jobs",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "Python"
+      ],
+      "manifests": [
+        "requirements.txt"
+      ],
+      "readme_skills": [
+        "python",
+        "pandas",
+        "postgresql",
+        "pytest"
+      ],
+      "code_skills": [
+        "python",
+        "pandas",
+        "postgresql",
+        "pytest"
+      ]
+    }
+  ],
+  "fetched_at": 0.0
+}

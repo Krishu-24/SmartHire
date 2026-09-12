@@ -1,0 +1,106 @@
+{
+  "source": "github",
+  "handle": "divyasharma",
+  "url": "https://github.com/divyasharma",
+  "status": "ok",
+  "message": "synthetic fixture profile (no network call) \u2014 1 repository covering the full stack she claims",
+  "skills": {
+    "react": [
+      {
+        "skill_id": "react",
+        "source": "github",
+        "kind": "dependency",
+        "where": "feature-flags",
+        "detail": "depends on `react` in package.json"
+      }
+    ],
+    "node.js": [
+      {
+        "skill_id": "node.js",
+        "source": "github",
+        "kind": "dependency",
+        "where": "feature-flags",
+        "detail": "depends on `express` in package.json"
+      }
+    ],
+    "express": [
+      {
+        "skill_id": "express",
+        "source": "github",
+        "kind": "dependency",
+        "where": "feature-flags",
+        "detail": "depends on `express` in package.json"
+      }
+    ],
+    "mongodb": [
+      {
+        "skill_id": "mongodb",
+        "source": "github",
+        "kind": "dependency",
+        "where": "feature-flags",
+        "detail": "depends on `mongoose` in package.json"
+      }
+    ],
+    "docker": [
+      {
+        "skill_id": "docker",
+        "source": "github",
+        "kind": "file",
+        "where": "feature-flags",
+        "detail": "repository contains Dockerfile"
+      }
+    ],
+    "rest api": [
+      {
+        "skill_id": "rest api",
+        "source": "github",
+        "kind": "dependency",
+        "where": "feature-flags",
+        "detail": "depends on `axios` in package.json"
+      }
+    ],
+    "git": [
+      {
+        "skill_id": "git",
+        "source": "github",
+        "kind": "file",
+        "where": "feature-flags",
+        "detail": "repository contains .gitignore"
+      }
+    ]
+  },
+  "repos": [
+    {
+      "name": "feature-flags",
+      "description": "Feature flag service",
+      "url": "https://github.com/EXAMPLE/feature-flags",
+      "stars": 0,
+      "pushed_at": "2025-11-02",
+      "languages": [
+        "JavaScript",
+        "CSS"
+      ],
+      "manifests": [
+        "package.json",
+        "Dockerfile"
+      ],
+      "readme_skills": [
+        "react",
+        "node.js",
+        "express",
+        "mongodb",
+        "docker",
+        "rest api"
+      ],
+      "code_skills": [
+        "react",
+        "node.js",
+        "express",
+        "mongodb",
+        "docker",
+        "rest api"
+      ]
+    }
+  ],
+  "fetched_at": 0.0
+}
