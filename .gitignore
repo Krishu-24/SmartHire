@@ -23,6 +23,13 @@ frontend/.vite/
 .env
 .env.*
 *.local
+# ...but the template must be tracked: it is the only documentation of which
+# keys exist, and `.env.*` would otherwise swallow it.
+!.env.example
 
 # Scratch
 /tmp/
+
+# Generated sample job descriptions — rebuild with:
+#     python scripts/make_sample_jds.py
+fixtures/jds/

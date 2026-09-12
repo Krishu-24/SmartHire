@@ -147,6 +147,11 @@ Must Should Will Would Can May Required Preferred Bonus Nice Strong Solid Experi
 Familiarity Exposure Understanding Knowledge Proficiency Ability Skills Role Team
 Work Working Build Building Develop Developing Years Year Job Company Office Bangalore
 India Candidates Candidate Tier Plus Good Great Responsibilities Requirements About
+Hybrid Remote Onsite Office Stipend Compensation Salary Eligibility Benefits Perks
+Location Duration Summer Winter Internship Intern Full Part Time Role Roles Team Teams
+Mumbai Pune Delhi Hyderabad Chennai Kolkata Gurgaon Noida Chandigarh Jaipur Kochi
+Ahmedabad Indore Nagpur Coimbatore Surat Bengaluru
+Tech Btech Be Bsc Mtech Msc Mca Bca Mba Phd Diploma Graduating Graduate Degree
 """.split())
 
 
@@ -171,9 +176,24 @@ def _mine_terms(line: str, known: set[str]) -> list[str]:
     """Capitalised technical-looking terms the gazetteer missed."""
     found = []
     known_words = _known_words()
+    # Where the sentence actually begins, ignoring bullets and indentation.
+    body_start = len(line) - len(line.lstrip(" \t-*•·–—>"))
+
     for match in _CAP_TERM.finditer(line):
         term = match.group(1).strip()
         words = term.split()
+
+        # A single capitalised word at the START of a line is a sentence-initial
+        # verb, not a technology: "Own services end to end", "Mentor interns",
+        # "Design the schema". Mining those put Own, Mentor and Designing into
+        # the required-skill set of a backend JD, which then counted against
+        # every candidate for not having them.
+        #
+        # Real technologies survive this: they appear mid-sentence or in lists,
+        # and anything in the gazetteer was already matched before mining runs.
+        if len(words) == 1 and match.start() <= body_start:
+            continue
+
         if any(w in _MINE_STOP for w in words):
             continue
         if len(term) < 3 or term.lower() in known:

@@ -71,7 +71,12 @@ def _latest(text: str, horizon: tuple[int, int]) -> tuple[int, int] | None:
 # Shape
 # ─────────────────────────────────────────────────────────────────────────────
 
-_SPLIT_RE = re.compile(r"[,;|/•·]+")
+# Newlines count as separators. A two-column skills rail stacks its tags
+# vertically — "React\nNode.js\nDocker" — and that is the same inventory as
+# "React, Node.js, Docker" written across the page. Without the newline the rail
+# escaped the bare-list discount entirely, so the identical claim scored higher
+# purely because the template used a sidebar.
+_SPLIT_RE = re.compile(r"[,;|/•·\n]+")
 
 # Past-tense and gerund forms that mark a line as a description of work rather
 # than an inventory. Kept explicit rather than inferred from -ed/-ing endings,

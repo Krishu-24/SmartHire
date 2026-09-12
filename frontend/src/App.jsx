@@ -319,23 +319,19 @@ export default function App() {
             <div className="eyebrow" style={{ marginBottom: 6 }}>This batch</div>
             <div className="railbtns">
               <button className="btn railbtn" onClick={() => jdSwapRef.current?.click()}
-                      title="Score this same pool against a different job description">
+                      title="Score this same pool against a different job description. Everyone is re-scored: normalisation is pool-relative, so who is in the room changes where people stand.">
                 Change JD
               </button>
               <input ref={jdSwapRef} type="file" accept="application/pdf" hidden
                      onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; swapJd(f) }} />
 
               <button className="btn railbtn" onClick={() => addRef.current?.click()}
-                      title="Add more resumes to the live pool">
+                      title="Add more resumes to the live pool. Everyone is re-scored, because normalisation is pool-relative.">
                 Add candidates
               </button>
               <input ref={addRef} type="file" accept="application/pdf" multiple hidden
                      onChange={(e) => { const f = e.target.files; e.target.value = ''; addCandidates(f) }} />
             </div>
-            <p className="note" style={{ marginTop: 6 }}>
-              Everyone is re-scored: the normalisation is pool-relative, so who is
-              in the room changes where people stand.
-            </p>
           </div>
 
           <div>
@@ -343,25 +339,19 @@ export default function App() {
             <div className="slider">
               <input type="range" min="0" max="1" step="0.01" value={alpha}
                      onChange={(e) => setAlpha(parseFloat(e.target.value))}
-                     aria-label="Keyword to semantic weighting" />
+                     aria-label="Keyword to semantic weighting"
+                     title="Re-ranks in the browser — no network call." />
               <div className="slider__ends">
                 <span>semantic</span>
                 <span className="mono">α {alpha.toFixed(2)}</span>
                 <span>keyword</span>
               </div>
             </div>
-            <p className="note" style={{ marginTop: 6 }}>
-              Re-ranks in the browser — no network call.
-            </p>
           </div>
 
           <div>
             <Toggle checked={gate} onChange={setGate} label="Must-have gate"
                     title="Scale scores by how much of the required set a candidate covers. Floored, so it re-ranks rather than eliminates." />
-            <p className="note" style={{ marginTop: 6 }}>
-              Scales by required coverage, floored at {meta?.gate_floor} so a strong
-              near-miss stays visible.
-            </p>
           </div>
 
           {pool && (
@@ -380,8 +370,17 @@ export default function App() {
             </div>
           )}
 
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 6 }}>Run</div>
+          {/* Diagnostics, not decisions. Engine name and elapsed time answer
+              "is it working", which is a question you ask once — so they fold
+              away instead of occupying the rail under every ranking. */}
+          <details className="fold">
+            <summary className="fold__head">
+              <span className="eyebrow">Run diagnostics</span>
+              <span className="fold__hint mono">
+                {meta?.enrichment ? 'evidence on' : 'evidence off'}
+              </span>
+            </summary>
+            <div className="fold__body">
             <div className="kv"><span className="kv__k">Engine</span>
               <span className="kv__v">{meta?.semantic_backend}</span></div>
             <div className="kv"><span className="kv__k">Elapsed</span>
@@ -392,7 +391,8 @@ export default function App() {
               <span className="kv__v">{meta?.parse_warnings}</span></div>
             <div className="kv"><span className="kv__k">External evidence</span>
               <span className="kv__v">{meta?.enrichment ? 'on' : 'off'}</span></div>
-          </div>
+            </div>
+          </details>
         </aside>
 
         <main className="col main">

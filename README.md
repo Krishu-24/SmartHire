@@ -18,6 +18,14 @@ No LLM scores anything. The matching is computed locally by our own engine, and
 | Platform | Double-click |
 |---|---|
 | Windows | **[`run.bat`](run.bat)** |
+| macOS / Linux | **[`run.command`](run.command)** |
+
+> **macOS first run:** if double-clicking opens the file in a text editor
+> instead of running it, make it executable once with `chmod +x run.command`.
+
+Both open **one** terminal. The API runs in the background of that same window
+and the UI in the foreground, so closing it or pressing Ctrl+C stops both —
+rather than leaving two orphaned consoles to hunt down.
 
 It will:
 
@@ -81,12 +89,26 @@ against the synthetic corpus and the reasoning is recorded in the comments there
 ### Optional: live GitHub evidence
 
 The external-evidence channel works offline against bundled synthetic profiles.
-To point it at real accounts, set a token first:
+To point it at real accounts you need a token, and the launcher will offer to
+capture one on first run — paste it at the prompt and it is written to `.env`.
+
+To set it up by hand instead:
 
 ```bash
-set GITHUB_TOKEN=ghp_your_token_here     # Windows
-export GITHUB_TOKEN=ghp_your_token_here  # macOS / Linux
+cp .env.example .env      # or: copy .env.example .env
 ```
+
+then edit `GITHUB_TOKEN=` in that file.
+
+> **Create the token with NO scopes ticked.** SmartHire only ever reads public
+> repositories, so a token with zero permissions works — and leaks nothing if it
+> escapes.
+
+**The token never enters a tracked file.** `.gitignore` excludes `.env`, the
+launchers write to `.env` rather than to themselves, and `backend/credentials.py`
+is the only thing permitted to render a token for display — always masked
+(`ghp_1234…cdef`). `python scripts/check_token.py` reports the current state
+without printing the value.
 
 Unauthenticated GitHub allows 60 requests an hour, which is not enough for a
 pool of any size; a token lifts it to 5000. Without one the channel degrades to
@@ -98,11 +120,16 @@ pool of any size; a token lifts it to 5000. Without one the channel degrades to
 
 ```bash
 python scripts/verify.py           # 11-check acceptance suite
+python scripts/verify_formats.py   # does layout change the score?
 python scripts/check_parity.py     # browser/engine agreement to 1e-9
 python scripts/smoke.py            # ranked table, no server needed
 python scripts/smoke.py --alpha 1.0   # pure keyword
 python scripts/smoke.py --alpha 0.0   # pure semantic
 python scripts/explain_scoring.py --flag HIDDEN_GEM
+
+python scripts/make_format_fixtures.py   # one candidate, six layouts
+python scripts/make_sample_jds.py        # three sample job descriptions
+python scripts/check_token.py            # GitHub credential state, masked
 ```
 
 The most important check is **#3: both channels change the ranking.** If
@@ -135,6 +162,33 @@ PDF ─┬─ PyMuPDF ─────┐
                                                         + verification
 ```
 
+### Format independence — the template must not be the candidate
+
+`fixtures/formats/` holds the **same person** written six ways: two columns, no
+headings at all, ALL-CAPS rules, inline `Skills:` headings, and one continuous
+narrative. An engine that ranks them differently is measuring the template, not
+the human — and that is the complaint every candidate has about every ATS.
+
+`scripts/verify_formats.py` scores all six inside the real 18-candidate pool and
+asserts they find an identical skill set. Three bugs it caught:
+
+- **Two-column resumes lost their entire skills rail.** Raw PDF reading order
+  interleaves the columns, so a narrow sidebar landed in the middle of unrelated
+  prose. Pages are now checked for a real vertical gutter and each column is read
+  in full before the next.
+- **Short lines were silently dropped.** A rail listing `React`, `Docker`, `Git`
+  one per line is six five-character lines, every one below the chunk minimum.
+  Consecutive short lines are now gathered into one list, and a run still too
+  short is merged into the chunk above it rather than discarded — nothing the
+  candidate wrote is ever thrown away.
+- **A vertical list escaped the bare-list discount** because the shape check
+  split on commas but not newlines, so the same inventory scored higher purely
+  for being in a sidebar.
+
+A known residual is reported rather than hidden: continuous prose scores a few
+points high, because long narrative chunks genuinely give the semantic channel
+more context than the same facts as bullets.
+
 ### Context weighting — where a skill appears, and when
 
 "React" in an internship that ended last month and "React" in a comma-separated
@@ -162,6 +216,40 @@ LinkedIn is weighted at 0.35 and can only ever *support* a claim the resume
 already makes. It has no public profile API and blocks automated access, so that
 provider reads a supplied export and otherwise reports itself unavailable rather
 than pretending to data it cannot lawfully obtain.
+
+### Imported, or actually used?
+
+A manifest proves someone typed a package name. It does not prove a line of code
+was written with it — `package.json` accumulates what a tutorial added, and
+`import pandas as pd` above a script that never touches `pd` is a copied header.
+
+So source files are read and every import is classified:
+
+| Verdict | Meaning | Weight |
+|---|---|---|
+| `CALLED` | invoked — `pd.read_csv(...)`, `<Router>`, `app.use(x)` | 1.00 |
+| `REFERENCED` | mentioned but never called — a type, a re-export | 0.60 |
+| `IMPORTED` | never seen again after the import line | 0.00 |
+
+An unused import earns nothing, but is still *reported*: "declared, never
+called" is more useful to a recruiter than silence, and it is exactly the shape
+of a dependency that was never a skill.
+
+Approximate by design — regex over five languages rather than a parser per
+language. Where it is unsure it degrades to `REFERENCED`, never to a false
+`CALLED`.
+
+### Finding a GitHub account without a link
+
+Most resumes carry an email and no profile URL. When there is no link, the email
+is used as a fallback: GitHub's user search for a public profile address, then
+commit-authorship search, which is how most accounts are actually discoverable.
+
+Treated as the guess it is. A result is accepted **only** when the search
+resolves to exactly one account — two people sharing an address prefix must not
+inherit each other's repositories — and evidence from an inferred handle is
+damped halfway back towards neutral and labelled as inferred everywhere it
+appears. Requires a token; the search endpoints are unusable unauthenticated.
 
 ### Claim verification — README against imports
 
@@ -299,6 +387,7 @@ than a guess — and the draft rejection note carries the roadmap.
 backend/
   app.py              FastAPI, in-memory session cache
   config.py           every tuning constant, with the measurements behind it
+  credentials.py      .env loading, token validation, masking — never logs a secret
   models.py           the API contract
   core/
     parser.py         multi-engine PDF cascade + invisible-text detection; never raises
@@ -311,6 +400,7 @@ backend/
     assess.py         assembly: integrity + enrichment + verification -> multipliers
     integrity.py      keyword stuffing and unsupported claims
     enrich.py         GitHub and LinkedIn evidence, cached, never blocking
+    usage.py          is the library imported, or actually called?
     verification.py   resume claims against the candidate's own code
     taxonomy.py       the ontology: paths, distance, bridge time
     rampup.py         per-candidate ramp-up estimates
@@ -333,13 +423,20 @@ frontend/src/
 scripts/
   warm_models.py         cache the model — run first
   make_synthetic_corpus.py
+  make_format_fixtures.py  one candidate, six layouts
+  make_sample_jds.py       three job descriptions with different shapes
+  check_token.py           GitHub credential state; never prints the value
   verify.py              acceptance suite
+  verify_formats.py      does layout change the score?
   check_parity.py        JS/Python agreement
   smoke.py               CLI pipeline
   explain_scoring.py     full derivation, for pitch prep
 fixtures/
   synthetic/          18 resumes + JD, with planted probes
+  formats/            the same candidate in six layouts (make_format_fixtures.py)
+  jds/                three sample JDs — generated, gitignored (make_sample_jds.py)
   profiles/           canned GitHub/LinkedIn profiles, so enrichment demos offline
+.env.example          the only tracked file that names the secrets; copy to .env
 ```
 
 ---
@@ -355,6 +452,16 @@ fixtures/
 - **The design system is two files**, `frontend/src/index.css` (tokens) and
   `App.css` (layout). Every colour, radius and easing is a token at the top;
   retheme from there rather than hunting through components.
+- **Animation shows a change the user caused**, never decoration: a row
+  reordering under the slider, a panel arriving, an evidence bar sliding to its
+  new mix. Nothing loops and nothing animates on a timer the user did not start,
+  because a dashboard that moves while you read it is harder to read. All of it
+  is disabled under `prefers-reduced-motion`.
+- **Row actions stay hidden until hover, focus or selection.** Two permanent
+  buttons per row is thirty-six controls competing with the eighteen names the
+  recruiter came to read.
+- **Never put a credential in a tracked file.** The launchers write to `.env`;
+  `backend/credentials.py` is the only code that renders a token, always masked.
 - **The four status colours are semantic, not decorative.** Green = MATCHED,
   blue = INFERRED, amber = WEAK, red = MISSING, used identically on rows, chips,
   the matrix and the diff. Changing one changes the app's whole legend.

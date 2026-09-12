@@ -224,7 +224,8 @@
 
 .row {
     display: grid;
-    grid-template-columns: 34px minmax(0, 1fr) 156px 92px;
+    /* rank | name+flags | evidence bar | actions (hover) | score */
+    grid-template-columns: 30px minmax(0, 1fr) 130px auto 62px;
     align-items: center;
     gap: var(--s3);
     padding: var(--s3) var(--s4);
@@ -234,9 +235,16 @@
     cursor: pointer;
     text-align: left;
     width: 100%;
-    transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+    transition: border-color var(--fast) var(--ease),
+                background var(--fast) var(--ease),
+                transform var(--fast) var(--ease);
 }
-.row:hover { border-color: var(--ink-4); }
+.row:hover {
+    border-color: var(--ink-4);
+    /* A whisper, not a lift. Enough to confirm the row is live under the
+       cursor without the list appearing to breathe as the mouse crosses it. */
+    transform: translateX(2px);
+}
 .row[aria-selected="true"] {
     border-color: var(--accent);
     box-shadow: inset 0 0 0 1px var(--accent);
@@ -256,14 +264,43 @@
     flex-wrap: wrap; margin-top: 3px;
 }
 
+/* Row actions: present, but silent until wanted. */
+.row__actions {
+    display: flex; gap: 4px;
+    opacity: 0;
+    transition: opacity var(--fast) var(--ease);
+}
+.row:hover .row__actions,
+.row:focus-within .row__actions,
+.row[aria-selected="true"] .row__actions { opacity: 1; }
+
+/* Keyboard users never hover, so focus alone must reveal them. */
+.row__actions:focus-within { opacity: 1; }
+
+.rowbtn {
+    font-family: var(--mono); font-size: 10px;
+    padding: 2px 7px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    color: var(--ink-3);
+    white-space: nowrap;
+    transition: background var(--fast) var(--ease), color var(--fast) var(--ease),
+                border-color var(--fast) var(--ease);
+}
+.rowbtn:hover { background: var(--surface-3); color: var(--ink); border-color: var(--ink-4); }
+.rowbtn--on {
+    background: var(--accent-tint); border-color: var(--accent-line); color: var(--accent);
+}
+.rowbtn--drop:hover {
+    background: var(--missing-tint); border-color: var(--missing-line); color: var(--missing);
+}
+
 .row__score { text-align: right; }
 .row__score-v {
-    font-family: var(--mono); font-size: 16px; font-weight: 600;
+    font-family: var(--mono); font-size: 17px; font-weight: 600;
     color: var(--ink); line-height: 1.1;
-}
-.row__score-sub {
-    font-family: var(--mono); font-size: 9.5px; color: var(--ink-4);
-    white-space: nowrap;   /* K 0.76 · M 0.81 must never wrap into three lines */
+    font-variant-numeric: tabular-nums;
 }
 
 /* Evidence bar: the four states, proportional */
@@ -278,12 +315,22 @@
 .evbar__seg--missing  { background: var(--missing-line); }
 
 .evbar__legend {
-    display: flex; flex-wrap: wrap;
-    column-gap: var(--s3); row-gap: 1px;
+    display: flex; align-items: center;
+    column-gap: var(--s3);
     margin-top: 5px;
-    font-family: var(--mono); font-size: 9.5px; color: var(--ink-4);
+    font-family: var(--mono); font-size: 10px; color: var(--ink-4);
     min-width: 0;
 }
+.evbar__legend span { display: inline-flex; align-items: center; gap: 3px; }
+
+/* The key carries the meaning that four spelled-out words used to. */
+.evbar__key {
+    width: 6px; height: 6px; border-radius: 2px; display: inline-block;
+}
+.evbar__key--matched  { background: var(--matched); }
+.evbar__key--inferred { background: var(--inferred); }
+.evbar__key--weak     { background: var(--weak); }
+.evbar__key--missing  { background: var(--missing-line); }
 
 /* ---- Chips -------------------------------------------------------------- */
 
@@ -926,4 +973,102 @@
     margin-top: 14px; padding-top: 5px;
     border-top: 1px solid #DCDBD6;
     font-size: 7.5pt; color: #5C584F !important;
+}
+
+/* ---- Disclosure ---------------------------------------------------------
+   For content that answers a question you ask once. Native <details> so it
+   works without JavaScript and is keyboard-operable for free. */
+
+.fold { border-top: 1px solid var(--line-soft); padding-top: var(--s3); }
+
+.fold__head {
+    display: flex; align-items: center; gap: var(--s2);
+    cursor: pointer; list-style: none;
+    user-select: none;
+}
+.fold__head::-webkit-details-marker { display: none; }
+.fold__head::after {
+    content: "";
+    width: 5px; height: 5px; margin-left: auto;
+    border-right: 1.5px solid var(--ink-4);
+    border-bottom: 1.5px solid var(--ink-4);
+    transform: rotate(45deg) translate(-1px, -1px);
+    transition: transform var(--fast) var(--ease);
+}
+.fold[open] .fold__head::after { transform: rotate(-135deg) translate(-2px, -2px); }
+.fold__head:hover .eyebrow { color: var(--ink-2); }
+
+.fold__hint { font-size: 10px; color: var(--ink-4); }
+.fold[open] .fold__hint { opacity: 0; }
+
+.fold__body { margin-top: var(--s2); animation: fold-open .18s var(--ease); }
+
+@keyframes fold-open {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* ---- Motion -------------------------------------------------------------
+   Animation earns its place by showing a CHANGE the user caused: a row
+   reordering under the slider, a panel arriving, a number counting to its new
+   value. Nothing here loops, and nothing animates on a timer the user did not
+   start — a dashboard that moves while you read it is harder to read. */
+
+/* Panels and tables arrive rather than appear. Staggered by nth-child so a
+   view reads top-to-bottom instead of flashing in as one block. */
+.main > .panel,
+.board > .row {
+    animation: enter .26s var(--ease) both;
+}
+.board > .row:nth-child(1)  { animation-delay: .00s }
+.board > .row:nth-child(2)  { animation-delay: .02s }
+.board > .row:nth-child(3)  { animation-delay: .04s }
+.board > .row:nth-child(4)  { animation-delay: .06s }
+.board > .row:nth-child(5)  { animation-delay: .08s }
+.board > .row:nth-child(6)  { animation-delay: .10s }
+.board > .row:nth-child(7)  { animation-delay: .12s }
+.board > .row:nth-child(8)  { animation-delay: .14s }
+.board > .row:nth-child(n+9) { animation-delay: .16s }
+
+.main > .panel:nth-child(2) { animation-delay: .05s }
+.main > .panel:nth-child(3) { animation-delay: .10s }
+
+@keyframes enter {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* The inspector slides in from the edge it lives on, so it reads as a panel
+   being pulled out rather than content replacing content. */
+.inspector { animation: slide-in .22s var(--ease); }
+
+@keyframes slide-in {
+    from { opacity: 0; transform: translateX(10px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* Tabs: the underline travels rather than jumping between labels. */
+.tab { position: relative; }
+.tab::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 2px; background: var(--accent);
+    transform: scaleX(0);
+    transition: transform .18s var(--ease);
+}
+.tab[aria-selected="true"]::after { transform: scaleX(1); }
+
+/* The score is the number people watch while dragging the slider. */
+.row__score-v { transition: color var(--fast) var(--ease); }
+.row:hover .row__score-v { color: var(--accent); }
+
+/* Chips that appear mid-session (a new flag after a re-score) fade rather
+   than pop, so the eye is drawn without the row jumping. */
+.chip { animation: fade .2s var(--ease); }
+
+@media (prefers-reduced-motion: reduce) {
+    .main > .panel, .board > .row, .inspector, .chip, .fold__body {
+        animation: none !important;
+    }
+    .row:hover { transform: none; }
 }

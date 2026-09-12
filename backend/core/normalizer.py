@@ -150,6 +150,47 @@ def chunk_text(display: str, sections: dict[str, tuple[int, int]] | None = None)
     chunks: list[Chunk] = []
     offset = 0
 
+    # A run of consecutive short lines is one list, not a series of scraps.
+    #
+    # Dropping every line under MIN_CHUNK_CHARS loses an entire skills rail in a
+    # two-column resume, where "Agile", "CSS" and "Git" each sit alone on a
+    # five-character line. That was silently costing those candidates six skills
+    # — a layout, not a person, deciding the ranking. So short lines accumulate
+    # and are emitted together once the run ends.
+    pending: list[tuple[int, int]] = []      # (start, end) of each short line
+
+    def flush() -> None:
+        if not pending:
+            return
+        start, end = pending[0][0], pending[-1][1]
+        pending.clear()
+        text = display[start:end].strip()
+        if not text:
+            return
+
+        if len(text) < config.MIN_CHUNK_CHARS:
+            # Still too short to stand alone. Rather than drop it — which is how
+            # "Jest, HTML, CSS, Agile" fell off the end of a wrapped skills line
+            # and cost three skills — glue it onto the preceding chunk. Nothing
+            # the candidate wrote is ever silently discarded.
+            if chunks:
+                prev = chunks[-1]
+                merged = display[prev.start:end].strip()
+                prev.text = merged
+                prev.end = prev.start + len(merged)
+                prev.canonical = canonicalize(merged)
+                prev.tokens = tokenize(prev.canonical)
+            return
+
+        # Span taken straight from the display text, so the UI can still
+        # highlight exactly what the engine matched.
+        canon = canonicalize(text)
+        chunks.append(Chunk(
+            text=text, canonical=canon, start=start, end=start + len(text),
+            section=_section_for(start, sections) if sections else "UNKNOWN",
+            tokens=tokenize(canon),
+        ))
+
     for line in display.split("\n"):
         line_start = display.find(line, offset) if line else offset
         if line_start < 0:
@@ -157,9 +198,14 @@ def chunk_text(display: str, sections: dict[str, tuple[int, int]] | None = None)
         offset = line_start + len(line)
 
         stripped = line.strip()
+        if not stripped:
+            flush()                          # a blank line ends the run
+            continue
         if len(stripped) < config.MIN_CHUNK_CHARS:
+            pending.append((line_start, offset))
             continue
 
+        flush()                              # a full line ends the run before it
         pieces = _SENTENCE_SPLIT_RE.split(stripped) if len(stripped) > 180 else [stripped]
 
         piece_cursor = line_start
@@ -183,6 +229,7 @@ def chunk_text(display: str, sections: dict[str, tuple[int, int]] | None = None)
                 tokens=tokenize(canon),
             ))
 
+    flush()                                  # a run ending at EOF still counts
     return chunks
 
 

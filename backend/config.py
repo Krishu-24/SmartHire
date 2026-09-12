@@ -10,23 +10,31 @@ from __future__ import annotations
 import os
 import pathlib
 
+from backend import credentials
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BACKEND = ROOT / "backend"
 DATA = BACKEND / "data"
+
+# Credentials come from a gitignored `.env` before anything below reads the
+# environment. Values already exported win, so a one-off
+# `set GITHUB_TOKEN=... && run.bat` still overrides the file.
+DOTENV_PATH = ROOT / ".env"
+DOTENV_KEYS = credentials.apply_dotenv(DOTENV_PATH)
 
 
 # ─── Device ──────────────────────────────────────────────────────────────────
 # Hardware decision (Phase 2): pure local on Apple Silicon. CPU is the default
 # because 18 resumes is far below the batch size where a GPU pays for itself,
 # and CPU avoids every MPS dtype quirk. Opt in with SMARTHIRE_DEVICE=mps.
-DEVICE = os.environ.get("SMARTHIRE_DEVICE", os.environ.get("INTERLOOM_DEVICE", "cpu"))
+DEVICE = os.environ.get("SMARTHIRE_DEVICE", "cpu")
 
 
 # ─── Semantic backend ────────────────────────────────────────────────────────
 # "minilm"     — sentence-transformers all-MiniLM-L6-v2 (default)
 # "tfidf_svd"  — scikit-learn TF-IDF + TruncatedSVD, the offline fallback.
 #                Degraded quality, but the pipeline survives a dead venue wifi.
-SEMANTIC_BACKEND = os.environ.get("SMARTHIRE_SEMANTIC", os.environ.get("INTERLOOM_SEMANTIC", "minilm"))
+SEMANTIC_BACKEND = os.environ.get("SMARTHIRE_SEMANTIC", "minilm")
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 SVD_DIMS = 256
 
@@ -200,7 +208,39 @@ ENRICHMENT_MAX_REPOS = 12       # newest-pushed repos to inspect per candidate
 ENRICHMENT_MAX_WORKERS = 4
 
 GITHUB_API = "https://api.github.com"
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")   # optional; lifts the rate limit
+
+# Never read from a tracked file. backend/credentials.py loads it from `.env`,
+# validates its shape, and is the only thing permitted to render it for display.
+GITHUB_TOKEN = credentials.clean(os.environ.get("GITHUB_TOKEN", ""))
+GITHUB_TOKEN_VALID = credentials.looks_valid(GITHUB_TOKEN)
+
+# Fallback discovery: find a GitHub account from the email on the resume when no
+# profile link is given. Off unless a token is present — the search API is
+# unusable unauthenticated (10 requests/minute, shared across the whole host).
+GITHUB_EMAIL_LOOKUP = os.environ.get("SMARTHIRE_EMAIL_LOOKUP", "1") not in ("0", "false", "no")
+GITHUB_EMAIL_LOOKUP_MAX = 3     # commit-search pages to inspect before giving up
+
+# Evidence from a handle we GUESSED is weaker than one the candidate published.
+# The multiplier is damped towards 1.0 so a wrong guess cannot manufacture a
+# strong candidate, and the UI always says the handle was inferred.
+INFERRED_HANDLE_DAMPING = 0.5
+
+# ─── Import usage ────────────────────────────────────────────────────────────
+# A manifest proves a package name was typed. It does not prove a line of code
+# was written with it: package.json accumulates things a tutorial added, and
+# `import pandas as pd` above a script that never touches `pd` is a copied
+# header. So source files are read and each import is classified.
+USAGE_SCAN_ENABLED = True
+USAGE_MAX_FILES = 8             # source files sampled per repository
+USAGE_MAX_BYTES = 120_000       # skip anything larger; it is generated or vendored
+
+# What each verdict is worth as a multiplier on that skill's evidence.
+# An unused import earns nothing — it is exactly the shape of a dependency that
+# was never a skill — but it is still reported, because "imported, never called"
+# is a more useful thing to show a recruiter than silence.
+USAGE_WEIGHT_CALLED = 1.00
+USAGE_WEIGHT_REFERENCED = 0.60
+USAGE_WEIGHT_IMPORTED = 0.00
 
 # Code is the strongest evidence there is: it was executed, not typed into a CV.
 # A skill proven by a dependency manifest is worth more than one merely written down.

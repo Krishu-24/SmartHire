@@ -66,18 +66,31 @@ function EvidenceBar({ candidate }) {
       <div className="evbar" role="img"
            aria-label={STATUSES.map((s) => `${counts[s]} ${STATUS_LABEL[s]}`).join(', ')}>
         {STATUSES.map((s) => counts[s] > 0 && (
-          <div key={s} className={`evbar__seg evbar__seg--${cls(s)}`}
-               style={{ width: `${(counts[s] / total) * 100}%` }} />
+          /* Width is animated rather than set: dragging the weight slider
+             changes the mix, and a bar that slides shows the change happening
+             instead of just being different afterwards. */
+          <motion.div
+            key={s}
+            className={`evbar__seg evbar__seg--${cls(s)}`}
+            initial={false}
+            animate={{ width: `${(counts[s] / total) * 100}%` }}
+            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+          />
         ))}
       </div>
+      {/* One line, shortest-first. Four labelled counts wrapping onto two lines
+          was more text than the bar above it, for the same information. */}
       <div className="evbar__legend">
         {STATUSES.map((s) => counts[s] > 0 && (
-          <span key={s}>{counts[s]} {STATUS_LABEL[s].toLowerCase()}</span>
+          <span key={s} title={STATUS_LABEL[s]}>
+            <i className={`evbar__key evbar__key--${cls(s)}`} />{counts[s]}
+          </span>
         ))}
       </div>
     </div>
   )
 }
+
 
 // Above this, a row wraps. The rest stay visible in the inspector.
 const MAX_FLAGS = 3
@@ -154,33 +167,42 @@ export default function Board({ candidates, selected, onSelect, loading, compare
                 <div className="row__meta">
                   <span className="chip chip--mono">{pct(c.primitives.req_coverage)} required</span>
                   <Flags candidate={c} />
-                  {onCompare && (
-                    <button
-                      className={`chip chip--mono ${compare?.includes(c.doc_id) ? 'chip--accent' : ''}`}
-                      aria-pressed={compare?.includes(c.doc_id) ?? false}
-                      title="Pick two candidates to see them side by side."
-                      onClick={(e) => { e.stopPropagation(); onCompare(c.doc_id) }}
-                    >
-                      compare
-                    </button>
-                  )}
-                  {onRemove && (
-                    <button
-                      className="chip chip--mono row__drop"
-                      title={`Remove ${c.name} from the pool and re-rank without them`}
-                      onClick={(e) => { e.stopPropagation(); onRemove(c.doc_id) }}
-                    >
-                      remove
-                    </button>
-                  )}
                 </div>
               </div>
 
               <EvidenceBar candidate={c} />
 
+              {/* Actions stay hidden until the row is hovered, focused or open.
+                  Two permanent buttons on every row is thirty-six controls
+                  competing with the eighteen names the recruiter came to read;
+                  they are needed rarely and findable exactly when wanted. */}
+              <div className="row__actions">
+                {onCompare && (
+                  <button
+                    className={`rowbtn ${compare?.includes(c.doc_id) ? 'rowbtn--on' : ''}`}
+                    aria-pressed={compare?.includes(c.doc_id) ?? false}
+                    title="Pick two candidates to see them side by side."
+                    onClick={(e) => { e.stopPropagation(); onCompare(c.doc_id) }}
+                  >
+                    compare
+                  </button>
+                )}
+                {onRemove && (
+                  <button
+                    className="rowbtn rowbtn--drop"
+                    title={`Remove ${c.name} from the pool and re-rank without them`}
+                    onClick={(e) => { e.stopPropagation(); onRemove(c.doc_id) }}
+                  >
+                    remove
+                  </button>
+                )}
+              </div>
+
+              {/* Score only. The K/M split lives in the Fusion inspector, which
+                  exists for exactly that question — repeating it on every row
+                  spent a column on something nobody reads while scanning. */}
               <div className="row__score">
                 <div className="row__score-v">{c.score.toFixed(1)}</div>
-                <div className="row__score-sub">K {c.k_score.toFixed(2)} · M {c.m_score.toFixed(2)}</div>
               </div>
             </motion.div>
           ))}

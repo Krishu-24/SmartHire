@@ -207,13 +207,27 @@ call :check_port %UI_PORT% "user interface"
 if errorlevel 1 exit /b 1
 
 REM ---- 9. External evidence -------------------------------------------
-if defined GITHUB_TOKEN (
-    echo [OK] GITHUB_TOKEN set - external evidence can use the full 5000/hour rate limit.
-) else (
-    echo [i ] No GITHUB_TOKEN set. Live GitHub lookups are capped at 60 requests
-    echo      an hour, which is not enough for a full pool. The bundled synthetic
-    echo      profiles work offline regardless. To raise it:
-    echo          set GITHUB_TOKEN=ghp_your_token_here
+REM The token lives in .env, which .gitignore excludes. It is deliberately NOT
+REM stored in this script: run.bat is tracked, and a credential pasted into a
+REM tracked file is a credential that gets committed.
+set "ENV_FILE=%~dp0.env"
+
+if not exist "%ENV_FILE%" (
+    if exist "%~dp0.env.example" (
+        copy /y "%~dp0.env.example" "%ENV_FILE%" >nul
+        echo [i ] Created .env from .env.example ^(gitignored^).
+    )
+)
+
+"%VENV_PY%" "%~dp0scripts\check_token.py"
+if errorlevel 2 (
+    echo.
+    set "WANT_TOKEN="
+    set /p "WANT_TOKEN=Paste a GitHub token to enable live lookups (Enter to skip): "
+    if defined WANT_TOKEN (
+        "%VENV_PY%" "%~dp0scripts\check_token.py" --save "!WANT_TOKEN!"
+        set "WANT_TOKEN="
+    )
 )
 echo.
 
@@ -222,12 +236,16 @@ echo ================================================
 echo   Starting SmartHire
 echo     API : http://localhost:%API_PORT%
 echo     UI  : http://localhost:%UI_PORT%
-echo   Close the two server windows to stop.
+echo.
+echo   Press Ctrl+C to stop. Both servers run in THIS window.
 echo ================================================
 echo.
 
-start "SmartHire API" cmd /k ""%VENV_PY%" -m uvicorn backend.app:app --port %API_PORT%"
-start "SmartHire UI" cmd /k "cd /d "%UI_DIR%" && npm run dev"
+REM One window, not three. The API goes into the background of this same console
+REM via `start /b`, which spawns no new window, and Vite runs in the foreground.
+REM Two extra consoles the user has to hunt down and close separately is not a
+REM launcher, it is litter.
+start /b "" "%VENV_PY%" -m uvicorn backend.app:app --port %API_PORT%
 
 echo [..] Waiting for the API to answer ...
 set "READY="
@@ -241,7 +259,8 @@ for /l %%i in (1,1,40) do (
 if defined READY (
     echo [OK] API is up.
 ) else (
-    echo [WARN] The API did not answer in time. Check the "SmartHire API" window.
+    echo [WARN] The API did not answer in time. It may still be loading the model;
+    echo        its output appears in this window.
 )
 
 REM Vite binds IPv6 loopback, so open localhost rather than 127.0.0.1 - the
@@ -253,8 +272,17 @@ REM rather than double-clicked.
 ping -n 4 127.0.0.1 >nul 2>nul
 start "" "http://localhost:%UI_PORT%"
 
+pushd "%UI_DIR%"
+call npm run dev
+popd
+
+REM Vite has exited (Ctrl+C, or it crashed), so take the background API down with
+REM it. Killed by port rather than PID: `start /b` hands batch no handle on the
+REM process it just launched, and the listener on our own port is unambiguous.
 echo.
-echo SmartHire is running. This window can be closed.
+echo [..] Stopping the API ...
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort %API_PORT% -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>nul
+echo [OK] SmartHire stopped.
 echo.
 pause
 endlocal

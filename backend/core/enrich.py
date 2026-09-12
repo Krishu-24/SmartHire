@@ -39,6 +39,7 @@ from dataclasses import asdict, dataclass, field
 from functools import lru_cache
 
 from backend import config
+from backend.core import usage
 
 GITHUB = "github"
 LINKEDIN = "linkedin"
@@ -70,6 +71,82 @@ _GITHUB_RESERVED = frozenset({
     "trending", "events", "sponsors", "readme", "orgs", "settings", "marketplace",
     "apps", "login", "join", "search", "new", "notifications", "issues", "pulls",
 })
+
+
+_EMAIL_RE = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b")
+
+# Addresses that are never a personal account, and searching for them returns
+# noise or someone else entirely.
+_GENERIC_EMAIL_DOMAINS = frozenset({
+    "example.com", "email.com", "test.com", "domain.com", "company.com",
+    "yourcompany.com", "mail.com", "noreply.github.com",
+})
+
+
+def find_emails(text: str) -> list[str]:
+    """Personal-looking email addresses on a resume, best first."""
+    out: list[str] = []
+    for m in _EMAIL_RE.finditer(text or ""):
+        addr = m.group(0).strip(".").lower()
+        domain = addr.rsplit("@", 1)[-1]
+        if domain in _GENERIC_EMAIL_DOMAINS:
+            continue
+        if addr not in out:
+            out.append(addr)
+    return out
+
+
+def find_handle_by_email(email: str, session=None) -> tuple[str, str] | None:
+    """Find a GitHub account from an email address. Returns (handle, how) or None.
+
+    A fallback for the common case of a resume that lists no profile link. Two
+    routes, in order of confidence:
+
+      1. `search/users?q=<email> in:email` — only finds people who chose to make
+         their address public on their profile. Unambiguous when it hits.
+      2. `search/commits?q=author-email:<email>` — finds the address in commit
+         metadata, which is public by default and is how most accounts are
+         actually discoverable.
+
+    This is inherently a guess, and the product treats it as one: the handle is
+    labelled inferred, its evidence is damped by INFERRED_HANDLE_DAMPING, and a
+    result is only accepted when the search returns exactly ONE distinct account.
+    Two candidates sharing an address prefix must not silently inherit each
+    other's repositories.
+
+    Requires a token. The search endpoints allow 10 requests/minute
+    unauthenticated, shared across the whole host, which in a pool of any size
+    means every lookup after the first few fails — worse than not trying.
+    """
+    if not config.GITHUB_EMAIL_LOOKUP or not config.GITHUB_TOKEN_VALID:
+        return None
+    if not email or "@" not in email:
+        return None
+
+    session = session or _session()
+
+    # --- 1. public profile email ---
+    resp = _get(session, f"{config.GITHUB_API}/search/users",
+                params={"q": f"{email} in:email", "per_page": 5})
+    if resp is not None and resp.ok:
+        items = (resp.json() or {}).get("items", [])
+        logins = {i.get("login") for i in items if i.get("login")}
+        if len(logins) == 1:
+            return logins.pop(), "public profile email"
+
+    # --- 2. commit authorship ---
+    commits = _get(session, f"{config.GITHUB_API}/search/commits",
+                   params={"q": f"author-email:{email}", "per_page": 10})
+    if commits is not None and commits.ok:
+        logins = {
+            (i.get("author") or {}).get("login")
+            for i in (commits.json() or {}).get("items", [])
+        }
+        logins.discard(None)
+        if len(logins) == 1:
+            return logins.pop(), "commit authorship"
+
+    return None
 
 
 def find_handles(text: str) -> dict[str, str]:
@@ -134,6 +211,8 @@ class RepoSummary:
     manifests: list[str] = field(default_factory=list)
     readme_skills: list[str] = field(default_factory=list)
     code_skills: list[str] = field(default_factory=list)
+    used_skills: list[str] = field(default_factory=list)     # imported AND exercised
+    unused_skills: list[str] = field(default_factory=list)   # imported, never called
 
     @property
     def readme_only(self) -> list[str]:
@@ -153,6 +232,8 @@ class Profile:
     repos: list[RepoSummary] = field(default_factory=list)
     fetched_at: float = 0.0
     from_cache: bool = False
+    inferred: bool = False          # handle guessed from an email, not published
+    inferred_via: str = ""          # how it was guessed, for the UI to disclose
 
     @property
     def ok(self) -> bool:
@@ -167,8 +248,14 @@ class Profile:
                 else config.LINKEDIN_EVIDENCE_WEIGHT)
 
     def multiplier(self) -> float:
-        return (config.GITHUB_SCORE_MULTIPLIER if self.source == GITHUB
+        base = (config.GITHUB_SCORE_MULTIPLIER if self.source == GITHUB
                 else config.LINKEDIN_SCORE_MULTIPLIER)
+        if not self.inferred:
+            return base
+        # A handle we guessed from an email is weaker evidence than one the
+        # candidate published. Damp towards 1.0 so a wrong guess can never
+        # manufacture a strong candidate.
+        return 1.0 + (base - 1.0) * config.INFERRED_HANDLE_DAMPING
 
 
 @dataclass(slots=True)
@@ -437,7 +524,66 @@ def _fetch_repo(session, handle: str, repo: dict) -> tuple[RepoSummary, list[Cod
             text = ""
         summary.readme_skills = _readme_skills(text)
 
+    # --- source files: imported, or actually used? ---
+    # The manifest already told us what is declared. This asks the harder
+    # question — was any of it exercised — and it is the difference between a
+    # dependency and a skill.
+    if config.USAGE_SCAN_ENABLED and paths:
+        sources = [
+            p for p in paths
+            if p.lower().endswith(usage.SOURCE_EXTENSIONS)
+            and not _is_vendored(p)
+        ][:config.USAGE_MAX_FILES]
+
+        uses: list[usage.ImportUse] = []
+        for path in sources:
+            blob = _get(session, f"{config.GITHUB_API}/repos/{handle}/{name}/contents/{path}")
+            if blob is None or not blob.ok:
+                continue
+            payload = blob.json() or {}
+            if (payload.get("size") or 0) > config.USAGE_MAX_BYTES:
+                continue
+            try:
+                src = base64.b64decode(payload.get("content") or "").decode(
+                    "utf-8", errors="replace")
+            except Exception:                          # noqa: BLE001
+                continue
+            uses.extend(usage.analyse_file(src, path))
+
+        for module, use in usage.summarise(uses).items():
+            skill = _lookup("packages", module) or _lookup("imports", module.split("/")[0])
+            if not skill:
+                continue
+            if use.verdict == usage.CALLED:
+                add(skill, "import-used",
+                    f"`{module}` imported and called in {use.file}", summary.code_skills)
+                if skill not in summary.used_skills:
+                    summary.used_skills.append(skill)
+            elif use.verdict == usage.REFERENCED:
+                add(skill, "import-referenced",
+                    f"`{module}` imported and referenced in {use.file}", summary.code_skills)
+                if skill not in summary.used_skills:
+                    summary.used_skills.append(skill)
+            else:
+                # Recorded, worth nothing. "Declared but never called" is a more
+                # useful thing to show a recruiter than silence — and it is the
+                # exact shape of a dependency that was never a skill.
+                if skill not in summary.unused_skills:
+                    summary.unused_skills.append(skill)
+
     return summary, evidence
+
+
+# Paths whose contents are somebody else's code.
+_VENDORED = (
+    "node_modules/", "vendor/", "dist/", "build/", "third_party/", ".min.",
+    "site-packages/", "venv/", "__pycache__/", "migrations/", ".next/",
+)
+
+
+def _is_vendored(path: str) -> bool:
+    lowered = path.lower()
+    return any(marker in lowered for marker in _VENDORED)
 
 
 def _readme_skills(text: str) -> list[str]:
@@ -604,8 +750,40 @@ def enrich_one(doc_id: str, text: str, enabled: bool) -> Enrichment:
             out.github = Profile(source=GITHUB, handle=handles[GITHUB],
                                  status=UNAVAILABLE, message=f"{type(exc).__name__}")
     else:
-        out.github.status = EMPTY
-        out.github.message = "no GitHub link on this resume"
+        # Fallback: most resumes list an email but no profile link, and the
+        # account is usually discoverable from it. A guess, treated as one —
+        # accepted only when the search resolves to exactly one account, and the
+        # resulting evidence is damped and labelled inferred throughout the UI.
+        found = None
+        for email in find_emails(text)[:2]:
+            try:
+                found = find_handle_by_email(email)
+            except Exception:                          # noqa: BLE001
+                found = None
+            if found:
+                break
+
+        if found:
+            handle, how = found
+            try:
+                out.github = fetch_github(handle)
+                out.github.inferred = True
+                out.github.inferred_via = how
+                out.github.message = (
+                    f"handle inferred from {how} — not linked on the resume. "
+                    + out.github.message
+                )
+            except Exception as exc:                   # noqa: BLE001
+                out.github = Profile(source=GITHUB, handle=handle, inferred=True,
+                                     inferred_via=how, status=UNAVAILABLE,
+                                     message=f"{type(exc).__name__}")
+        else:
+            out.github.status = EMPTY
+            out.github.message = (
+                "no GitHub link on this resume"
+                if config.GITHUB_TOKEN_VALID
+                else "no GitHub link on this resume (email lookup needs a token)"
+            )
 
     if LINKEDIN in handles:
         try:
